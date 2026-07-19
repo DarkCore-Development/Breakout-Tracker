@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Breakout Tracker - Professional Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg-dark: #08090c;
+      --bg-card: #111722;
+      --accent: #f59e0b; 
+      --text: #f1f5f9;
+      --red-loot: #ef4444;
+      --green-cash: #10b981;
+      --yellow-alert: #eab308;
+      --twitch-purple: #9146ff;
+      --border: #1e293b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    body { background-color: var(--bg-dark); color: var(--text); padding: 20px; min-height: 100vh; }
+    
+    .container { max-width: 1400px; margin: 0 auto; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid var(--border); padding-bottom: 15px; flex-wrap: wrap; gap: 15px; }
+    h1 { font-size: 24px; color: #fff; font-weight: 800; text-transform: uppercase; }
+    h1 span { color: var(--accent); }
+    
+    .header-user-zone { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+    .header-avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--accent); object-fit: cover; background: #090d14; }
+    .header-username { font-weight: 600; color: #cbd5e1; font-size: 14px; margin-right: 10px; }
+    
+    .nav-tabs { display: flex; gap: 10px; }
+    .tab-btn { padding: 10px 20px; background: #111722; color: #94a3b8; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 13px; text-transform: uppercase; transition: all 0.2s; }
+    .tab-btn:hover { background: #1e293b; color: #fff; }
+    .tab-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+    .tab-btn.active.profile-tab-theme { background: var(--red-loot); color: #fff; border-color: var(--red-loot); }
+
+    .btn-secondary { padding: 8px 16px; background: #1e293b; color: #fff; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-secondary:hover { background: #334155; }
+
+    #auth-screen { max-width: 420px; margin: 80px auto; background: var(--bg-card); padding: 40px 30px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; margin-bottom: 8px; font-size: 13px; color: #94a3b8; font-weight: 600; text-transform: uppercase; }
+    .form-group input, select { width: 100%; padding: 12px; background: #090d14; border: 1px solid var(--border); color: #fff; border-radius: 6px; font-size: 15px; }
+    .form-group input:focus, select:focus { border-color: var(--accent); outline: none; }
+    
+    .file-upload-wrapper { position: relative; display: inline-block; width: 100%; }
+    .file-upload-btn { display: block; width: 100%; padding: 12px; background: #161f30; border: 1px dashed var(--border); color: #cbd5e1; text-align: center; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; }
+    .file-upload-btn:hover { border-color: var(--accent); background: #1e293b; }
+    .file-upload-wrapper input[type="file"] { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+
+    button { width: 100%; padding: 14px; background: var(--accent); border: none; color: #000; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 15px; text-transform: uppercase; transition: opacity 0.2s; }
+    button:hover { opacity: 0.9; }
+    .toggle-auth { text-align: center; margin-top: 20px; font-size: 14px; color: #64748b; cursor: pointer; }
+
+    #dashboard-screen { display: none; }
+    .view-section { display: none; }
+    .view-section.active-view { display: block; }
+
+    .grid-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 35px; }
+    .card { background: var(--bg-card); padding: 22px; border-radius: 10px; border: 1px solid var(--border); }
+    .card h3 { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+    .card .val { font-size: 28px; font-weight: 800; }
+    .card .sub { font-size: 12px; margin-top: 5px; color: #94a3b8; }
+    
+    .val.red { color: var(--red-loot); }
+    .val.cash { color: var(--green-cash); }
+
+    .streams-panel { background: linear-gradient(135deg, #111722 0%, #171226 100%); border: 1px solid var(--twitch-purple); margin-bottom: 30px; padding: 20px; border-radius: 10px; }
+    .streams-container { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 15px; }
+    .stream-card { background: rgba(9, 13, 20, 0.6); border: 1px solid rgba(145, 70, 255, 0.3); padding: 12px 18px; border-radius: 8px; display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; position: relative; overflow: hidden; transition: transform 0.2s; }
+    .stream-card:hover { transform: translateY(-2px); border-color: var(--twitch-purple); background: rgba(23, 18, 38, 0.8); }
+    .stream-avatar-wrap { position: relative; }
+    .stream-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid var(--twitch-purple); }
+    .live-badge { position: absolute; bottom: -4px; right: 5px; background: var(--red-loot); color: #fff; font-size: 9px; padding: 2px 5px; font-weight: 900; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; animation: pulse 1.5s infinite; }
+
+    @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+
+    .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 30px; margin-bottom: 30px; }
+    @media (min-width: 1100px) { .dashboard-grid { grid-template-columns: 1fr 1.3fr; } }
+
+    .panel { background: var(--bg-card); padding: 25px; border-radius: 10px; border: 1px solid var(--border); height: fit-content; }
+    .panel-title { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 20px; border-left: 4px solid var(--accent); padding-left: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .panel-title.profile-accent { border-left-color: var(--red-loot); }
+
+    #profile-config-panel { display: none; margin-bottom: 30px; border: 1px solid var(--red-loot); }
+    .profile-grid-fields { display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 20px; }
+    @media (min-width: 600px) { .profile-grid-fields { grid-template-columns: 1fr 1fr; } }
+
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+    th { padding: 12px; color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 11px; border-bottom: 2px solid var(--border); }
+    td { padding: 12px; border-bottom: 1px solid var(--border); color: #cbd5e1; vertical-align: middle; }
+    .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+    .badge.survived { background: rgba(16, 185, 129, 0.15); color: var(--green-cash); }
+    .badge.kia { background: rgba(239, 68, 68, 0.15); color: var(--red-loot); }
+    
+    .btn-delete { background: none; border: none; color: #64748b; cursor: pointer; font-size: 16px; width: auto; padding: 5px; display: inline-flex; align-items: center; justify-content: center; }
+    .btn-delete:hover { color: var(--red-loot); }
+
+    .red-items-box { background: #090d14; border: 1px solid var(--border); padding: 5px; border-radius: 6px; margin-top: 10px; max-height: 560px; overflow-y: auto; }
+    .red-item-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; border-bottom: 1px solid #161f30; transition: background 0.15s; }
+    .red-item-row:hover { background: #111722; }
+    .red-item-row:last-child { border-bottom: none; }
+    
+    .item-info-side { display: flex; align-items: center; gap: 12px; }
+    .item-render-img { width: 44px; height: 44px; object-fit: contain; background: #111722; border: 1px solid #1e293b; border-radius: 6px; padding: 2px; }
+    
+    .red-item-row label { color: #fff; font-weight: 700; font-size: 13px; text-transform: none; display: flex; flex-direction: column; cursor: pointer; }
+    .red-item-row label span { font-size: 11px; color: var(--accent); margin-top: 2px; font-weight: 600; }
+    
+    .red-item-row input { width: 75px; padding: 6px; text-align: center; font-weight: 800; background: #090d14; color: #fff; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
+    .red-item-row input:focus { border-color: var(--red-loot); outline: none; background: #111722; }
+
+    .profile-dashboard-zone { display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 25px; }
+    @media (min-width: 950px) { .profile-dashboard-zone { grid-template-columns: 1.1fr 1.3fr; } }
+    .profile-mini-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 25px; display: flex; flex-direction: column; justify-content: center; }
+    .chart-container-donut { position: relative; height: 240px; width: 100%; display: flex; justify-content: center; align-items: center; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    
+    <!-- AUTH SCREEN -->
+    <div id="auth-screen">
+      <h2 id="auth-title" style="margin-bottom: 25px; font-weight: 800; color: #fff; text-align: center;">Sign In to Tracker</h2>
+      <div class="form-group"><label>Email Address</label><input type="email" id="auth-email" placeholder="youremail@example.com"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="auth-password" placeholder="••••••••"></div>
+      <button id="btn-auth" onclick="handleAuth()">Sign In</button>
+      <div class="toggle-auth" onclick="toggleAuthMode()">Don't have an account? Sign Up Here</div>
+    </div>
+
+    <!-- DASHBOARD SCREEN -->
+    <div id="dashboard-screen">
+      <header>
+        <div style="display: flex; align-items: center; gap: 25px;">
+          <h1>Breakout <span>Tracker</span></h1>
+          <div class="nav-tabs">
+            <button class="tab-btn active" id="tab-raids" onclick="switchTab('raids')">⚔️ Raids Dashboard</button>
+            <button class="tab-btn" id="tab-profile" onclick="switchTab('profile')">📂 Profile Portfolio</button>
+          </div>
+        </div>
+        
+        <div class="header-user-zone">
+          <img id="user-display-avatar" class="header-avatar" src="https://i.imgur.com/6EH996s.png" alt="Avatar">
+          <span id="user-display-name" class="header-username">Operator_Recruit</span>
+          <button class="btn-secondary" id="config-trigger-btn" style="display: none;" onclick="toggleProfileConfigPanel()">⚙️ Edit Setup & Identity</button>
+          <button onclick="logout()" style="width: auto; padding: 8px 18px; background: #ef4444; color: white; border-radius:6px; font-size:13px;">Logout</button>
+        </div>
+      </header>
+
+      <!-- LIVE STREAMS -->
+      <div class="streams-panel">
+        <div style="font-size: 14px; font-weight: 800; color: #fff; text-transform: uppercase; display: flex; align-items: center; gap: 8px;">
+          <span style="color: var(--twitch-purple);">🔮</span> Live Now on Twitch (Community Operators)
+        </div>
+        <div class="streams-container" id="live-operators-list">
+          <div style="font-size: 13px; color: #64748b;">No operators are currently streaming.</div>
+        </div>
+      </div>
+
+      <!-- TAB 1: RAIDS -->
+      <div id="section-raids-view" class="view-section active-view">
+        <div style="margin-bottom: 15px; font-weight: 800; color: var(--accent); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">
+          ⚔️ Combat & Raids Performance History
+        </div>
+
+        <div class="grid-stats">
+          <div class="card">
+            <h3>Raids / Rate</h3>
+            <div class="val" id="stat-raids">0</div>
+            <div class="sub" id="stat-sr">0% Survival Rate</div>
+          </div>
+          <div class="card">
+            <h3>Special Loot (Raid Logs)</h3>
+            <div class="val red" id="stat-vermelhos">0</div>
+            <div class="sub">Red items found on recorded matches</div>
+          </div>
+          <div class="card">
+            <h3>Net Worth (Raid Activity)</h3>
+            <div class="val cash" id="stat-patrimonio">0 Koen</div>
+            <div class="sub" id="stat-lucro-porcento">Profitability: 0%</div>
+          </div>
+          <div class="card">
+            <h3>Performance Status</h3>
+            <div class="val" id="stat-performance" style="font-size: 22px; color: #fff; margin-top: 5px;">Awaiting Raids</div>
+            <div class="sub">Automated tactical performance review</div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-bottom: 30px;">
+          <div class="panel-title">📈 Net Worth Progression (Recent History)</div>
+          <div style="height: 250px; width: 100%;">
+            <canvas id="graficoPatrimonio"></canvas>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="panel">
+            <div class="panel-title">📝 Log Raid Data</div>
+            <div class="form-group"><label>Map</label>
+              <select id="raid-map">
+                <option value="Airport">Airport</option>
+                <option value="Armory">Armory</option>
+                <option value="Farm">Farm</option>
+                <option value="Northridge">Northridge</option>
+                <option value="TV Station">TV Station</option>
+                <option value="Valley">Valley</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Mode</label>
+              <select id="raid-mode">
+                <option value="Normal">Normal</option>
+                <option value="Lockdown (150k)">Lockdown (150k)</option>
+                <option value="Forbidden (300k)">Forbidden (300k)</option>
+                <option value="PVE">PVE</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Extraction Status</label>
+              <select id="raid-status" onchange="ajustarCamposPorStatus()">
+                <option value="Survived">Survived</option>
+                <option value="KIA">KIA (Killed in Action)</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Loadout Value (Koen)</label>
+              <input type="text" id="raid-loadout" value="200,000" oninput="formatarMoedaInput(this)">
+            </div>
+            <div id="campos-sucesso">
+              <div class="form-group"><label>Total Extracted Value</label>
+                <input type="text" id="raid-extracted" value="600,000" oninput="formatarMoedaInput(this)">
+              </div>
+              <div class="form-group"><label style="color: var(--red-loot); font-weight: bold;">🔴 Red Items Extracted</label>
+                <input type="number" id="raid-red-count" value="0" min="0">
+              </div>
+            </div>
+            <button onclick="enviarRaid()">Publish Raid Entry</button>
+          </div>
+
+          <div class="panel">
+            <div class="panel-title">📜 Recent Raid Activity Log</div>
+            <div style="overflow-x: auto;">
+              <table>
+                <thead>
+                  <tr><th>Map</th><th>Mode</th><th>Status</th><th>Net Income</th><th>% Margin</th><th style="width: 40px;"></th></tr>
+                </thead>
+                <tbody id="historico-lista">
+                  <tr><td colspan="6" style="text-align: center; color: #64748b;">No records found.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: PORTFOLIO -->
+      <div id="section-profile-view" class="view-section">
+        
+        <div id="profile-config-panel" class="panel">
+          <div class="panel-title profile-accent">
+            <span>👤 Operator Profile & Hardware Settings</span>
+            <button class="btn-secondary" style="padding: 4px 10px; font-size: 11px;" onclick="toggleProfileConfigPanel()">Close Config ✕</button>
+          </div>
+          
+          <div class="profile-grid-fields">
+            <div>
+              <h4 style="font-size: 13px; color: var(--accent); margin-bottom: 12px; text-transform: uppercase;">Identity</h4>
+              <div class="form-group"><label>Username / Operator Call Sign</label><input type="text" id="prof-username"></div>
+              <div class="form-group">
+                <label>Avatar Photo</label>
+                <div class="file-upload-wrapper">
+                  <div class="file-upload-btn" id="file-label-text">📁 Choose Image File...</div>
+                  <input type="file" id="prof-avatar-file" accept="image/*" onchange="handleAvatarFileSelect(this)">
+                </div>
+              </div>
+            </div>
+            <div>
+              <h4 style="font-size: 13px; color: var(--twitch-purple); margin-bottom: 12px; text-transform: uppercase;">Twitch Live Sync</h4>
+              <div class="form-group"><label>Twitch Channel Name / Link</label><input type="text" id="prof-twitch" placeholder="e.g. ttv_username"></div>
+              <h4 style="font-size: 13px; color: var(--accent); margin-bottom: 12px; text-transform: uppercase;">In-Game Configs</h4>
+              <div class="form-group" style="margin-bottom: 0;"><label>Mouse Sensitivity / DPI</label>
+                <div style="display: flex; gap: 10px;">
+                  <input type="text" id="prof-sens" placeholder="Sens" style="width: 60%;">
+                  <input type="number" id="prof-dpi" placeholder="DPI" style="width: 40%;">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="profile-grid-fields">
+            <div>
+              <h4 style="font-size: 13px; color: var(--accent); margin-bottom: 12px; text-transform: uppercase;">PC Environment</h4>
+              <div class="form-group"><label>Processor (CPU)</label><input type="text" id="prof-cpu" value="Ryzen 5 5500"></div>
+              <div class="form-group"><label>Graphics Card (GPU)</label><input type="text" id="prof-gpu" value="RTX 3060"></div>
+            </div>
+            <div>
+              <h4 style="font-size: 13px; color: var(--accent); margin-bottom: 12px; text-transform: uppercase;">Optimization Specs</h4>
+              <div class="form-group"><label>RAM Memory</label><input type="text" id="prof-ram" value="16GB 3200MHz"></div>
+              <div class="form-group"><label>Operating System</label><input type="text" id="prof-os" value="ZenithOS"></div>
+            </div>
+          </div>
+          <button onclick="salvarConfiguracoesPerfil()" style="background: var(--green-cash); color: #fff; max-width: 200px;">Save Setup Data</button>
+        </div>
+
+        <div style="margin-bottom: 20px; font-weight: 800; color: var(--red-loot); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">
+          📂 Profile Portfolio Dashboard (Saved Storage)
+        </div>
+
+        <div class="profile-dashboard-zone">
+          
+          <div style="display: flex; flex-direction: column; gap: 20px;">
+            <div class="profile-mini-card">
+              <h3 style="font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">Portfolio Total Value</h3>
+              <div class="val red" id="vault-total-value" style="font-size: 32px; font-weight: 900;">0 Koen</div>
+              <div class="sub" id="vault-total-items" style="font-size: 12px; color: #94a3b8; margin-top: 5px;">0 Red items saved in profile</div>
+            </div>
+
+            <div class="panel" style="padding: 20px; max-height: 240px; overflow-y: auto;">
+              <div class="panel-title profile-accent" style="font-size: 13px; margin-bottom: 12px;">📋 Active Vault Items</div>
+              <table>
+                <thead>
+                  <tr><th>Item</th><th>Qty</th><th>Estimated Value</th></tr>
+                </thead>
+                <tbody id="vault-table-body">
+                  <tr><td colspan="3" style="text-align: center; color: #64748b; font-size: 12px;">Vault is empty.</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="panel" style="padding: 20px;">
+              <div class="panel-title profile-accent" style="font-size: 13px; margin-bottom: 5px;">📊 Vault Items Breakdown</div>
+              <div class="chart-container-donut">
+                <canvas id="graficoPerfilDonut"></canvas>
+              </div>
+            </div>
+          </div>
+          
+          <div class="panel" style="padding: 25px;">
+            <div class="panel-title profile-accent" style="font-size: 15px; margin-bottom: 10px;">
+              <span style="display:flex; align-items:center; gap:6px;">
+                <span style="display:inline-block; width:8px; height:8px; background:var(--red-loot); border-radius:50%;"></span> 
+                EDIT VAULT QUANTITIES
+              </span>
+            </div>
+            
+            <div class="red-items-box" style="max-height: 560px;">
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=LION" alt="Golden Lion Statue">
+                  <label for="red-gold_lion">Golden Lion Statue <span>~1,500,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-gold_lion" data-price="1500000" data-name="Golden Lion Statue" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=JET" alt="KM903 Airborne Propulsion Unit">
+                  <label for="red-km903_jet">KM903 Airborne Unit <span>~800,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-km903_jet" data-price="800000" data-name="KM903 Airborne Unit" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=DOC" alt="Secret Document">
+                  <label for="red-secret_document">Secret Document <span>~16,100,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-secret_document" data-price="16100000" data-name="Secret Document" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=UTO" alt="Utopia Core">
+                  <label for="red-utopia">Utopia Core <span>~4,500,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-utopia" data-price="4500000" data-name="Utopia Core" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=MASK" alt="Replica Mask">
+                  <label for="red-replica_mask">Replica Mask <span>~1,600,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-replica_mask" data-price="1600000" data-name="Replica Mask" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=FRAME" alt="'Dawn' Painting">
+                  <label for="red-alvorada_frame">"Dawn" Painting <span>~1,600,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-alvorada_frame" data-price="1600000" data-name="'Dawn' Painting" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=TV" alt="Capsule TV">
+                  <label for="red-capsule_tv">Capsule TV <span>~1,600,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-capsule_tv" data-price="1600000" data-name="Capsule TV" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=CAGE" alt="Golden Cage">
+                  <label for="red-music_box">Golden Cage <span>~1,600,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-music_box" data-price="1600000" data-name="Golden Cage" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=NAV" alt="Aerospace Navigator">
+                  <label for="red-aerospace_navigator">Aerospace Navigator <span>~1,550,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-aerospace_navigator" data-price="1550000" data-name="Aerospace Navigator" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=STAT" alt="Majestic Sculpture">
+                  <label for="red-majestic_sculpture">Majestic Sculpture <span>~1,550,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-majestic_sculpture" data-price="1550000" data-name="Majestic Sculpture" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=CLS" alt="CLS Satellite Link">
+                  <label for="red-cls_satellite">CLS Satellite Link <span>~1,500,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-cls_satellite" data-price="1500000" data-name="CLS Satellite Link" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=FAE" alt="Phaeton Watch">
+                  <label for="red-faeton">Phaeton Watch <span>~1,500,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-faeton" data-price="1500000" data-name="Phaeton Watch" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=EEG" alt="EEG Helmet Record">
+                  <label for="red-eeg">EEG Helmet Record <span>~1,500,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-eeg" data-price="1500000" data-name="EEG Helmet Record" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=PROT" alt="Prototype Sphere">
+                  <label for="red-prototype">Prototype Sphere <span>~1,500,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-prototype" data-price="1500000" data-name="Prototype Sphere" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=MATR" alt="Verdad Matrix">
+                  <label for="red-matriz_verdad">Verdad Matrix <span>~1,500,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-matriz_verdad" data-price="1500000" data-name="Verdad Matrix" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=CUBE" alt="Chaotic Matter">
+                  <label for="red-chaotic_matter">Chaotic Matter <span>~1,500,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-chaotic_matter" data-price="1500000" data-name="Chaotic Matter" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=TGT" alt="Target Positioning Module">
+                  <label for="red-target_module">Target Pos. Module <span>~1,450,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-target_module" data-price="1450000" data-name="Target Pos. Module" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=NECK" alt="Gemstone Necklace">
+                  <label for="red-gem_necklace">Gemstone Necklace <span>~1,450,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-gem_necklace" data-price="1450000" data-name="Gemstone Necklace" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=SNAK" alt="Golden Snake Statue">
+                  <label for="red-gold_snake">Golden Snake Statue <span>~1,400,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-gold_snake" data-price="1400000" data-name="Golden Snake Statue" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=POT" alt="Antique Teapot">
+                  <label for="red-antique_teapot">Antique Teapot <span>~1,400,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-antique_teapot" data-price="1400000" data-name="Antique Teapot" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=CLAY" alt="Clay of Destiny">
+                  <label for="red-clay_destiny">Clay of Destiny <span>~1,350,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-clay_destiny" data-price="1350000" data-name="Clay of Destiny" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=GYRO" alt="Three-Axis Gyroscope">
+                  <label for="red-three_axis_gyro">Three-Axis Gyroscope <span>~1,350,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-three_axis_gyro" data-price="1350000" data-name="Three-Axis Gyroscope" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=AMB" alt="Amber Heart">
+                  <label for="red-amber_heart">Amber Heart <span>~1,350,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-amber_heart" data-price="1350000" data-name="Amber Heart" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=ROB" alt="Quantum 2000 Computer">
+                  <label for="red-quantum_2000">Quantum 2000 <span>~1,350,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-quantum_2000" data-price="1350000" data-name="Quantum 2000" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=STAR" alt="Kamona Star Medal">
+                  <label for="red-kamona_star">Kamona Star Medal <span>~1,350,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-kamona_star" data-price="1350000" data-name="Kamona Star Medal" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=T008" alt="T-008 Relic">
+                  <label for="red-t008">T-008 Relic <span>~1,350,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-t008" data-price="1350000" data-name="T-008 Relic" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=VASE" alt="Porcelain Vase">
+                  <label for="red-vase">Porcelain Vase <span>~1,350,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-vase" data-price="1350000" data-name="Porcelain Vase" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=OPTO" alt="Optoelectronic Unit">
+                  <label for="red-optoelectronic">Optoelectronic Unit <span>~1,350,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-optoelectronic" data-price="1350000" data-name="Optoelectronic Unit" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=PEAC" alt="Peacock Fan">
+                  <label for="red-peacock_fan">Peacock Fan <span>~1,350,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-peacock_fan" data-price="1350000" data-name="Peacock Fan" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=DISC" alt="Voice of Civilization Disc">
+                  <label for="red-civ_voice">Voice of Civ. Disc <span>~1,350,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-civ_voice" data-price="1350000" data-name="Voice of Civ. Disc" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=LYRA" alt="Cultural Lyre">
+                  <label for="red-lyre">Cultural Lyre <span>~1,350,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-lyre" data-price="1350000" data-name="Cultural Lyre" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=EGG" alt="Hefra Egg">
+                  <label for="red-hefra_egg">Hefra Egg <span>~1,350,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-hefra_egg" data-price="1350000" data-name="Hefra Egg" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=TERM" alt="Thermal Imaging Module">
+                  <label for="red-thermal_module">Thermal Imaging Module <span>~1,300,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-thermal_module" data-price="1300000" data-name="Thermal Imaging Module" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=CUP" alt="Championship Trophy">
+                  <label for="red-champ_trophy">Championship Trophy <span>~950,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-champ_trophy" data-price="950000" data-name="Championship Trophy" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=PNT" alt="Wave Steed Statue">
+                  <label for="red-wave_steed">Wave Steed Statue <span>~850,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-wave_steed" data-price="850000" data-name="Wave Steed Statue" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=PENG" alt="Dark Zone Penguin">
+                  <label for="red-dz_penguin">Dark Zone Penguin <span>~800,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-dz_penguin" data-price="800000" data-name="Dark Zone Penguin" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=HELM" alt="Golden Helmet">
+                  <label for="red-golden_helmet">Golden Helmet <span>~800,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-golden_helmet" data-price="800000" data-name="Golden Helmet" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=CAR" alt="Caliburn Car Model">
+                  <label for="red-caliburn_model">Caliburn Car Model <span>~750,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-caliburn_model" data-price="750000" data-name="Caliburn Car Model" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=CHSS" alt="Luxury Chess Set">
+                  <label for="red-luxury_chess">Luxury Chess Set <span>~750,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-luxury_chess" data-price="750000" data-name="Luxury Chess Set" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=GOLD" alt="Spark Steed Statue">
+                  <label for="red-spark_steed">Spark Steed Statue <span>~750,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-spark_steed" data-price="750000" data-name="Spark Steed Statue" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=PASS" alt="Gold Command Board">
+                  <label for="red-gold_com_board">Gold Command Board <span>~650,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-gold_com_board" data-price="650000" data-name="Gold Command Board" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=CASE" alt="Anniversary Gold Box">
+                  <label for="red-anniv_gold_box">Anniv. Gold Box <span>~350,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-anniv_gold_box" data-price="350000" data-name="Anniv. Gold Box" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+            </div>
+
+            <button onclick="salvarApenasItensCofre()" style="background: var(--green-cash); color: #fff; margin-top: 15px; height: 48px; border-radius: 6px; font-weight: 800; font-size: 14px; letter-spacing: 0.5px;">SAVE PROFILE VAULT</button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:5000/api';
+    let token = localStorage.getItem('token');
+    let isLoginMode = true;
+    let chartInstance = null;
+    let chartDonutInstance = null;
+    let base64AvatarStr = ""; 
+
+    if (token) { mostrarDashboard(); }
+
+    function switchTab(tabName) {
+      document.getElementById('tab-raids').classList.remove('active');
+      document.getElementById('tab-profile').classList.remove('active', 'profile-tab-theme');
+      document.getElementById('section-raids-view').classList.remove('active-view');
+      document.getElementById('section-profile-view').classList.remove('active-view');
+      
+      document.getElementById('profile-config-panel').style.display = 'none';
+
+      if (tabName === 'raids') {
+        document.getElementById('tab-raids').classList.add('active');
+        document.getElementById('section-raids-view').classList.add('active-view');
+        document.getElementById('config-trigger-btn').style.display = 'none';
+      } else if (tabName === 'profile') {
+        document.getElementById('tab-profile').classList.add('active', 'profile-tab-theme');
+        document.getElementById('section-profile-view').classList.add('active-view');
+        document.getElementById('config-trigger-btn').style.display = 'inline-flex';
+        if(chartDonutInstance) { chartDonutInstance.resize(); }
+      }
+    }
+
+    function formatarMoedaInput(input) {
+      let valor = input.value.replace(/\D/g, "");
+      if (valor === "") valor = "0";
+      input.value = Number(valor).toLocaleString('en-US');
+    }
+
+    function handleAvatarFileSelect(input) {
+      if (input.files && input.files[0]) {
+        const file = input.files[0];
+        document.getElementById('file-label-text').innerText = `📄 ${file.name}`;
+        const reader = new FileReader();
+        reader.onload = function(e) { base64AvatarStr = e.target.result; };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function toggleAuthMode() {
+      isLoginMode = !isLoginMode;
+      document.getElementById('auth-title').innerText = isLoginMode ? 'Sign In to Tracker' : 'Create Operator Account';
+      document.getElementById('btn-auth').innerText = isLoginMode ? 'Sign In' : 'Sign Up';
+    }
+
+    function toggleProfileConfigPanel() {
+      const panel = document.getElementById('profile-config-panel');
+      panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+    }
+
+    function ajustarCamposPorStatus() {
+      const status = document.getElementById('raid-status').value;
+      const blocoSucesso = document.getElementById('campos-sucesso');
+      if (status === 'KIA') {
+        blocoSucesso.style.display = 'none';
+        document.getElementById('raid-extracted').value = "0";
+        document.getElementById('raid-red-count').value = "0";
+      } else {
+        blocoSucesso.style.display = 'block';
+        document.getElementById('raid-extracted').value = "600,000";
+      }
+    }
+
+    async function handleAuth() {
+      const email = document.getElementById('auth-email').value;
+      const password = document.getElementById('auth-password').value;
+      const rota = isLoginMode ? '/auth/login' : '/auth/register';
+
+      try {
+        const res = await fetch(`${API_URL}${rota}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (data.error) return alert(data.error);
+
+        if (isLoginMode) {
+          localStorage.setItem('token', data.token);
+          token = data.token;
+          mostrarDashboard();
+        } else {
+          alert('Account created successfully!');
+          toggleAuthMode();
+        }
+      } catch (err) { alert('Failed to connect to the server.'); }
+    }
+
+    function mostrarDashboard() {
+      document.getElementById('auth-screen').style.display = 'none';
+      document.getElementById('dashboard-screen').style.display = 'block';
+      renderizarPainelCompleto();
+      carregarDadosPerfil();
+      carregarLivesDaComunidade(); 
+      switchTab('raids');
+    }
+
+    async function renderizarPainelCompleto() {
+      await carregarEstatisticas();
+      await carregarHistoricoEGráfico();
+    }
+
+    async function carregarDadosPerfil() {
+      try {
+        const res = await fetch(`${API_URL}/user/profile`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const user = await res.json();
+
+        if(user.username) {
+          document.getElementById('user-display-name').innerText = user.username;
+          document.getElementById('prof-username').value = user.username;
+        }
+        if(user.avatarUrl) {
+          document.getElementById('user-display-avatar').src = user.avatarUrl;
+          base64AvatarStr = user.avatarUrl; 
+        }
+        if(user.twitchChannel) document.getElementById('prof-twitch').value = user.twitchChannel;
+        if(user.gameSettings) {
+          document.getElementById('prof-sens').value = user.gameSettings.sensitivity || '';
+          document.getElementById('prof-dpi').value = user.gameSettings.dpi || '';
+        }
+        if(user.hardwareSpecs) {
+          if(user.hardwareSpecs.cpu) document.getElementById('prof-cpu').value = user.hardwareSpecs.cpu;
+          if(user.hardwareSpecs.gpu) document.getElementById('prof-gpu').value = user.hardwareSpecs.gpu;
+          if(user.hardwareSpecs.ram) document.getElementById('prof-ram').value = user.hardwareSpecs.ram;
+          if(user.hardwareSpecs.os) document.getElementById('prof-os').value = user.hardwareSpecs.os;
+        }
+        
+        if(user.redItems) {
+          Object.keys(user.redItems).forEach(key => {
+            const input = document.getElementById(`red-${key}`);
+            if(input) input.value = user.redItems[key] || 0;
+          });
+        }
+
+        processarDashboardPerfil();
+
+      } catch (err) { console.error('Error fetching operator profile data.'); }
+    }
+
+    function processarDashboardPerfil() {
+      const inputs = document.querySelectorAll('.red-portfolio-input');
+      let valorTotalCofre = 0;
+      let academicQty = 0;
+      
+      let chartLabels = [];
+      let chartValues = [];
+      let tabelaHtml = '';
+
+      inputs.forEach(input => {
+        const qtd = Number(input.value) || 0;
+        const preco = Number(input.getAttribute('data-price')) || 0;
+        const nome = input.getAttribute('data-name') || 'Item';
+
+        if (qtd > 0) {
+          const valorCalculado = qtd * preco;
+          valorTotalCofre += valorCalculado;
+          academicQty += qtd;
+
+          chartLabels.push(nome);
+          chartValues.push(qtd);
+
+          tabelaHtml += `
+            <tr>
+              <td><strong>${nome}</strong></td>
+              <td><span style="color:var(--accent); font-weight:bold;">${qtd}x</span></td>
+              <td style="color:var(--green-cash); font-weight:500;">${valorCalculado.toLocaleString('en-US')} K</td>
+            </tr>
+          `;
+        }
+      });
+
+      document.getElementById('vault-total-value').innerText = `${valorTotalCofre.toLocaleString('en-US')} Koen`;
+      document.getElementById('vault-total-items').innerText = `${academicQty} Red items saved in profile`;
+
+      const tbody = document.getElementById('vault-table-body');
+      if (tabelaHtml === '') {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #64748b; font-size:12px;">Vault is empty. Adjust quantities on the right list.</td></tr>';
+      } else {
+        tbody.innerHTML = tabelaHtml;
+      }
+
+      renderizarGraficoDonutPerfil(chartLabels, chartValues);
+    }
+
+    function renderizarGraficoDonutPerfil(labels, dados) {
+      const ctx = document.getElementById('graficoPerfilDonut').getContext('2d');
+      if (chartDonutInstance) { chartDonutInstance.destroy(); }
+
+      if (dados.length === 0) {
+        labels = ['No Items Saved'];
+        dados = [1];
+      }
+
+      chartDonutInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: dados,
+            backgroundColor: [
+              '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', 
+              '#ec4899', '#14b8a6', '#f43f5e', '#06b6d4', '#10b981',
+              '#6366f1', '#a855f7', '#d946ef', '#f97316', '#84cc16'
+            ],
+            borderWidth: 1,
+            borderColor: '#111722'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: dados.length > 1 && dados[0] !== 'No Items Saved',
+              position: 'right',
+              labels: { color: '#94a3b8', font: { size: 11 } }
+            }
+          }
+        }
+      });
+    }
+
+    async function salvarApenasItensCofre() {
+      const payload = {
+        username: document.getElementById('prof-username').value || 'Operator_Recruit',
+        avatarUrl: base64AvatarStr || 'https://i.imgur.com/6EH996s.png', 
+        twitchChannel: document.getElementById('prof-twitch').value || '',
+        gameSettings: {
+          sensitivity: document.getElementById('prof-sens').value,
+          dpi: Number(document.getElementById('prof-dpi').value) || 800
+        },
+        hardwareSpecs: {
+          cpu: document.getElementById('prof-cpu').value,
+          gpu: document.getElementById('prof-gpu').value,
+          ram: document.getElementById('prof-ram').value,
+          os: document.getElementById('prof-os').value
+        },
+        redItems: {
+          gold_lion: Number(document.getElementById('red-gold_lion').value) || 0,
+          km903_jet: Number(document.getElementById('red-km903_jet').value) || 0,
+          secret_document: Number(document.getElementById('red-secret_document').value) || 0,
+          utopia: Number(document.getElementById('red-utopia').value) || 0,
+          replica_mask: Number(document.getElementById('red-replica_mask').value) || 0,
+          alvorada_frame: Number(document.getElementById('red-alvorada_frame').value) || 0,
+          capsule_tv: Number(document.getElementById('red-capsule_tv').value) || 0,
+          music_box: Number(document.getElementById('red-music_box').value) || 0,
+          aerospace_navigator: Number(document.getElementById('red-aerospace_navigator').value) || 0,
+          majestic_sculpture: Number(document.getElementById('red-majestic_sculpture').value) || 0,
+          cls_satellite: Number(document.getElementById('red-cls_satellite').value) || 0,
+          faeton: Number(document.getElementById('red-faeton').value) || 0,
+          eeg: Number(document.getElementById('red-eeg').value) || 0,
+          prototype: Number(document.getElementById('red-prototype').value) || 0,
+          matriz_verdad: Number(document.getElementById('red-matriz_verdad').value) || 0,
+          chaotic_matter: Number(document.getElementById('red-chaotic_matter').value) || 0,
+          target_module: Number(document.getElementById('red-target_module').value) || 0,
+          gem_necklace: Number(document.getElementById('red-gem_necklace').value) || 0,
+          gold_snake: Number(document.getElementById('red-gold_snake').value) || 0,
+          antique_teapot: Number(document.getElementById('red-antique_teapot').value) || 0,
+          clay_destiny: Number(document.getElementById('red-clay_destiny').value) || 0,
+          three_axis_gyro: Number(document.getElementById('red-three_axis_gyro').value) || 0,
+          amber_heart: Number(document.getElementById('red-amber_heart').value) || 0,
+          quantum_2000: Number(document.getElementById('red-quantum_2000').value) || 0,
+          kamona_star: Number(document.getElementById('red-kamona_star').value) || 0,
+          t008: Number(document.getElementById('red-t008').value) || 0,
+          vase: Number(document.getElementById('red-vase').value) || 0,
+          optoelectronic: Number(document.getElementById('red-optoelectronic').value) || 0,
+          peacock_fan: Number(document.getElementById('red-peacock_fan').value) || 0,
+          civ_voice: Number(document.getElementById('red-civ_voice').value) || 0,
+          lyre: Number(document.getElementById('red-lyre').value) || 0,
+          hefra_egg: Number(document.getElementById('red-hefra_egg').value) || 0,
+          thermal_module: Number(document.getElementById('red-thermal_module').value) || 0,
+          champ_trophy: Number(document.getElementById('red-champ_trophy').value) || 0,
+          wave_steed: Number(document.getElementById('red-wave_steed').value) || 0,
+          dz_penguin: Number(document.getElementById('red-dz_penguin').value) || 0,
+          golden_helmet: Number(document.getElementById('red-golden_helmet').value) || 0,
+          caliburn_model: Number(document.getElementById('red-caliburn_model').value) || 0,
+          luxury_chess: Number(document.getElementById('red-luxury_chess').value) || 0,
+          spark_steed: Number(document.getElementById('red-spark_steed').value) || 0,
+          gold_com_board: Number(document.getElementById('red-gold_com_board').value) || 0,
+          anniv_gold_box: Number(document.getElementById('red-anniv_gold_box').value) || 0
+        }
+      };
+
+      try {
+        const res = await fetch(`${API_URL}/user/profile`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          alert('Vault quantities synced and saved successfully!');
+          processarDashboardPerfil();
+        }
+      } catch (err) { alert('Internal error syncing operator data profile.'); }
+    }
+
+    async function salvarConfiguracoesPerfil() {
+      await salvarApenasItensCofre();
+      toggleProfileConfigPanel();
+    }
+
+    async function carregarLivesDaComunidade() {
+      try {
+        const res = await fetch(`${API_URL}/streams/live`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const lives = await res.json();
+        const container = document.getElementById('live-operators-list');
+        if (!lives || lives.length === 0) {
+          container.innerHTML = '<div style="font-size: 13px; color: #64748b;">No operators are currently streaming.</div>';
+          return;
+        }
+        container.innerHTML = lives.map(op => {
+          const twitchUser = op.twitchChannel.replace('https://twitch.tv/', '').replace('twitch.tv/', '');
+          return `
+            <a href="https://twitch.tv/${twitchUser}" target="_blank" class="stream-card">
+              <div class="stream-avatar-wrap">
+                <img src="${op.avatarUrl || 'https://i.imgur.com/6EH996s.png'}" class="stream-avatar" alt="Live">
+                <div class="live-badge">Live</div>
+              </div>
+              <div>
+                <div style="font-weight: 700; font-size: 14px; color: #fff;">${op.username}</div>
+                <div style="font-size: 11px; color: #9146ff; font-weight: 600;">twitch.tv/${twitchUser}</div>
+              </div>
+            </a>
+          `;
+        }).join('');
+      } catch (err) { console.error('Error fetching live community channels.'); }
+    }
+
+    async function carregarEstatisticas() {
+      try {
+        const res = await fetch(`${API_URL}/stats`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await res.json();
+        document.getElementById('stat-raids').innerText = data.totalRaids || 0;
+        document.getElementById('stat-vermelhos').innerText = data.totalVermelhos || 0;
+        document.getElementById('stat-patrimonio').innerText = `${(data.patrimonioLiquidoGeral || 0).toLocaleString('en-US')} Koen`;
+      } catch (err) { console.error('Error fetching dashboard statistics'); }
+    }
+
+    async function carregarHistoricoEGráfico() {
+      try {
+        const res = await fetch(`${API_URL}/raids`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const raids = await res.json();
+        const tbody = document.getElementById('historico-lista');
+        
+        if (!raids || raids.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748b;">No records found.</td></tr>';
+          if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+          return;
+        }
+
+        let totalSurvived = 0;
+        let totalCustoKits = 0;
+        let totalLucroBruto = 0;
+        let historicoLucrosAcumulados = [];
+        let labelsGrafico = [];
+        let somaAcumulada = 0;
+
+        const raidsInvertidas = [...raids].reverse();
+        raidsInvertidas.forEach((raid, index) => {
+          if (raid.status === 'Survived') totalSurvived++;
+          totalCustoKits += raid.loadoutValue;
+          totalLucroBruto += raid.extractedValue;
+          somaAcumulada += raid.netProfit;
+          historicoLucrosAcumulados.push(somaAcumulada);
+          labelsGrafico.push(`Raid ${index + 1}`);
+        });
+
+        const srRate = raids.length > 0 ? ((totalSurvived / raids.length) * 100).toFixed(0) : 0;
+        document.getElementById('stat-sr').innerText = `${srRate}% Survival Rate`;
+
+        const rentabilidade = totalCustoKits > 0 ? (((totalLucroBruto - totalCustoKits) / totalCustoKits) * 100).toFixed(0) : 0;
+        document.getElementById('stat-lucro-porcento').innerText = `Overall ROI: ${rentabilidade}%`;
+
+        const cardPerf = document.getElementById('stat-performance');
+        if (srRate >= 60 && rentabilidade > 50) {
+          cardPerf.innerText = "🔥 Chad Tier";
+          cardPerf.style.color = "var(--green-cash)";
+        } else if (srRate < 35) {
+          cardPerf.innerText = "📉 Down Bad";
+          cardPerf.style.color = "var(--red-loot)";
+        } else {
+          cardPerf.innerText = "⚖️ Stable Operator";
+          cardPerf.style.color = "var(--yellow-alert)";
+        }
+
+        tbody.innerHTML = raids.map(raid => {
+          let margemPartida = (((raid.extractedValue - raid.loadoutValue) / raid.loadoutValue) * 100).toFixed(0);
+          return `
+            <tr>
+              <td><strong>${raid.mapName}</strong></td>
+              <td><span style="color: #eab308; font-weight: 600;">${raid.gameMode || 'Normal'}</span></td>
+              <td><span class="badge ${raid.status.toLowerCase()}">${raid.status}</span></td>
+              <td style="color: ${raid.netProfit >= 0 ? 'var(--green-cash)' : 'var(--red-loot)'}">
+                ${raid.netProfit >= 0 ? '+' : ''}${raid.netProfit.toLocaleString('en-US')} K
+              </td>
+              <td style="color: ${margemPartida >= 0 ? 'var(--green-cash)' : 'var(--red-loot)'}">
+                ${margemPartida >= 0 ? '+' : ''}${margemPartida}%
+              </td>
+              <td>
+                <button class="btn-delete" onclick="deletarRaid('${raid._id}')" title="Delete Entry">🗑️</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        renderizarGraficoLinha(labelsGrafico, historicoLucrosAcumulados);
+      } catch (err) { console.error('Error rendering chart and data log', err); }
+    }
+
+    function renderizarGraficoLinha(labels, dados) {
+      const ctx = document.getElementById('graficoPatrimonio').getContext('2d');
+      if (chartInstance) { chartInstance.destroy(); }
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Net Worth Progression (Koen)',
+            data: dados,
+            borderColor: '#f59e0b',
+            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+            borderWidth: 3,
+            tension: 0.3,
+            fill: true,
+            pointBackgroundColor: '#fff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } },
+            y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } }
+          }
+        }
+      });
+    }
+
+    async function enviarRaid() {
+      const loadoutPuro = Number(document.getElementById('raid-loadout').value.replace(/,/g, '')) || 0;
+      const extractedPuro = Number(document.getElementById('raid-extracted').value.replace(/,/g, '')) || 0;
+      const totalRedsCount = Number(document.getElementById('raid-red-count').value) || 0;
+
+      const bodyData = {
+        mapName: document.getElementById('raid-map').value,
+        gameMode: document.getElementById('raid-mode').value,
+        status: document.getElementById('raid-status').value,
+        loadoutValue: loadoutPuro,
+        extractedValue: extractedPuro,
+        redItemsCount: totalRedsCount
+      };
+
+      try {
+        const res = await fetch(`${API_URL}/raids`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify(bodyData)
+        });
+        if (res.ok) {
+          document.getElementById('raid-loadout').value = "200,000";
+          document.getElementById('raid-extracted').value = "600,000";
+          document.getElementById('raid-status').value = "Survived";
+          document.getElementById('raid-red-count').value = "0";
+          document.getElementById('campos-sucesso').style.display = 'block';
+          await renderizarPainelCompleto();
+        }
+      } catch (err) { alert('Error saving raid entry.'); }
+    }
+
+    async function deletarRaid(id) {
+      if (!confirm('Are you sure you want to delete this raid record?')) return;
+      try {
+        await fetch(`${API_URL}/raids/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+        await renderizarPainelCompleto();
+      } catch (err) { alert('Error deleting record.'); }
+    }
+
+    function logout() { localStorage.removeItem('token'); window.location.reload(); }
+  </script>
+</body>
+</html>
