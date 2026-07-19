@@ -8,13 +8,18 @@ require('dotenv').config();
 
 const app = express();
 
+// Configuração do CORS dinâmica para aceitar requisições locais e do deploy na Vercel
+app.use(cors({
+  origin: '*', 
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+})); 
+
 // Otimização para uploads pesados de avatares ou imagens em Base64
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true, parameterLimit: 50000 }));
 
-app.use(cors()); 
-
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/breakout_tracker';
+const MONGO_URI = process.env.MONGO_URI;
 const JWT_SECRET = process.env.JWT_SECRET || 'darkcore_secret_key_siege_123';
 
 const transporter = nodemailer.createTransport({
@@ -26,9 +31,14 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-mongoose.connect(MONGO_URI)
-  .then(() => console.log('🚀 Database successfully connected!'))
-  .catch(err => console.error('❌ Database connection error:', err));
+// Conexão com o Banco de Dados com verificação de estado (essencial para Serverless da Vercel)
+if (MONGO_URI) {
+  mongoose.connect(MONGO_URI)
+    .then(() => console.log('🚀 Database successfully connected!'))
+    .catch(err => console.error('❌ Database connection error:', err));
+} else {
+  console.error('❌ Erro: A variável de ambiente MONGO_URI não foi definida na Vercel!');
+}
 
 // ==========================================
 // 1. MODELAGEM DE DADOS (SCHEMAS)
@@ -110,84 +120,6 @@ RaidSchema.pre('save', function(next) {
 });
 
 const Raid = mongoose.model('Raid', RaidSchema);
-
-// ==========================================
-// FUNÇÕES AUXILIARES DE VALIDAÇÃO DE LIVE
-// ==========================================
-
-function extrairUsername(canalUrl, plataforma) {
-  if (!canalUrl) return '';
-  return canalUrl
-    .replace(`https://`, '')
-    .replace(`http://`, '')
-    .replace(`www.`, '')
-    .replace(`${plataforma}.tv/`, '')
-    .replace(`${plataforma}.com/`, '')
-    .split('/')[0]
-    .split('?')[0]
-    .trim();
-}
-
-async function verificarStatusDasStreams() {
-  try {
-    const usuariosComCanais = await User.find({
-      $or: [
-        { twitchChannel: { $ne: "" } },
-        { kickChannel: { $ne: "" } }
-      ]
-    });
-
-    for (let usuario of usuariosComCanais) {
-      let transmitindoAgora = false;
-      let plataformaAtiva = '';
-
-      const nickTwitch = extrairUsername(usuario.twitchChannel, 'twitch');
-      const nickKick = extrairUsername(usuario.kickChannel, 'kick');
-
-      if (nickTwitch) {
-        try {
-          const res = await fetch(`https://www.twitch.tv/${nickTwitch}`, { 
-            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' } 
-          });
-          const html = await res.text();
-          if (html.includes('"isLiveBroadcast":true') || html.includes('isLive')) {
-            transmitindoAgora = true;
-            plataformaAtiva = 'twitch';
-          }
-        } catch (e) {
-          console.error(`Erro ao checar Twitch do usuário ${nickTwitch}:`, e.message);
-        }
-      }
-
-      if (!transmitindoAgora && nickKick) {
-        try {
-          const res = await fetch(`https://kick.com/api/v1/channels/${nickKick}`);
-          if (res.ok) {
-            const dados = await res.json();
-            if (dados.livestream && dados.livestream.is_live) {
-              transmitindoAgora = true;
-              plataformaAtiva = 'kick';
-            }
-          }
-        } catch (e) {
-          console.error(`Erro ao checar Kick do usuário ${nickKick}:`, e.message);
-        }
-      }
-
-      if (usuario.isLive !== transmitindoAgora || usuario.livePlatform !== plataformaAtiva) {
-        await User.findByIdAndUpdate(usuario._id, { 
-          isLive: transmitindoAgora, 
-          livePlatform: plataformaAtiva 
-        });
-      }
-    }
-  } catch (err) {
-    console.error("Falha no ciclo de verificação de transmissões:", err);
-  }
-}
-
-setInterval(verificarStatusDasStreams, 3 * 60 * 1000);
-setTimeout(verificarStatusDasStreams, 10000);
 
 // ==========================================
 // 2. MIDDLEWARE DE AUTENTICAÇÃO (JWT)
@@ -279,8 +211,6 @@ app.put('/api/user/profile', autenticarToken, async (req, res) => {
       { new: true, runValidators: true }
     );
 
-    setTimeout(verificarStatusDasStreams, 1000);
-
     return res.json({ message: 'Dashboard config synchronized!', user: updatedUser });
   } catch (error) {
     return res.status(500).json({ error: `Failed to update operator profile: ${error.message}` });
@@ -291,7 +221,6 @@ app.get('/api/streams/live', autenticarToken, async (req, res) => {
   try {
     const liveOperators = await User.find({ isLive: true })
       .select('username avatarUrl twitchChannel kickChannel livePlatform');
-    
     return res.json(liveOperators);
   } catch (error) {
     return res.status(500).json({ error: 'Failed to fetch community streams.' });
@@ -371,11 +300,10 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error processing requested action.' });
 });
 
-// Inicialização do Servidor Local
+// Inicialização do Servidor Local (Apenas fora da produção)
 const PORT = process.env.PORT || 5000;
 if (process.env.NODE_ENV !== 'production') {
   app.listen(PORT, () => console.log(`🔥 Server smoothly executing on port ${PORT}`));
 }
 
-// CORREÇÃO ESSENCIAL PARA DEPLOY (VERCEL/SERVERLESS)
 module.exports = app;
