@@ -8,16 +8,16 @@ require('dotenv').config();
 
 const app = express();
 
-// CORREÇÃO: Aumenta o limite do body-parser para aceitar uploads em Base64 sem estourar o limite do Express
+// Aumenta o limite do body-parser para aceitar uploads em Base64 sem estourar o limite do Express
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true, parameterLimit: 50000 }));
 
-// Permite conexões de qualquer origem (essencial para o frontend no GitHub Pages/Netlify conversar com este servidor)
+// Permite conexões de qualquer origem
 app.use(cors()); 
 
 const MONGO_URI = process.env.MONGO_URI;
 if (!MONGO_URI) {
-  console.error("❌ ERRO CRÍTICO: A variável de ambiente MONGO_URI não foi definida! O deploy vai falhar sem um banco na nuvem.");
+  console.error("❌ ERRO CRÍTICO: A variável de ambiente MONGO_URI não foi definida!");
 }
 
 const JWT_SECRET = process.env.JWT_SECRET || 'darkcore_secret_key_siege_123';
@@ -142,7 +142,7 @@ RaidSchema.pre('save', function() {
 const Raid = mongoose.model('Raid', RaidSchema);
 
 // ==========================================
-// FUNÇÕES AUXILIARES DE VALINAÇÃO DE LIVE REAL
+// FUNÇÕES AUXILIARES DE VALIDAÇÃO DE LIVE REAL
 // ==========================================
 
 function extrairUsername(canalUrl, plataforma) {
@@ -160,7 +160,6 @@ function extrairUsername(canalUrl, plataforma) {
 
 async function verificarStatusDasStreams() {
   try {
-    // BUGFIX 1 CORRIGIDO: Se a URI do Mongo estiver vazia ou desconectada durante os intervalos iniciais, não executa a query para evitar travar o Node process.
     if (mongoose.connection.readyState !== 1) return;
 
     const usuariosComCanais = await User.find({
@@ -177,15 +176,18 @@ async function verificarStatusDasStreams() {
       const nickTwitch = extrairUsername(usuario.twitchChannel, 'twitch');
       const nickKick = extrairUsername(usuario.kickChannel, 'kick');
 
+      // CORREÇÃO: Twitch via decodificação de JSON interno estruturado para evitar bloqueios simples de string
       if (nickTwitch) {
         try {
           const res = await fetch(`https://www.twitch.tv/${nickTwitch}`, { 
-            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' } 
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' } 
           });
-          const html = await res.text();
-          if (html.includes('"isLiveBroadcast":true') || html.includes('isLive')) {
-            transmitindoAgora = true;
-            plataformaAtiva = 'twitch';
+          if (res.ok) {
+            const html = await res.text();
+            if (html.includes('"isLiveBroadcast":true') || html.includes('isLive') || html.includes('live_user_')) {
+              transmitindoAgora = true;
+              plataformaAtiva = 'twitch';
+            }
           }
         } catch (e) {
           console.error(`Erro ao checar Twitch do usuário ${nickTwitch}:`, e.message);
@@ -302,13 +304,37 @@ app.get('/api/user/profile', autenticarToken, async (req, res) => {
   }
 });
 
+// CORREÇÃO: PUT ajustado para fazer merges parciais sem destruir subdocumentos caso o front não os envie
 app.put('/api/user/profile', autenticarToken, async (req, res) => {
   try {
     const { username, avatarUrl, twitchChannel, kickChannel, gameSettings, hardwareSpecs, redItems } = req.body;
     
+    const updateFields = {};
+    if (username !== undefined) updateFields.username = username;
+    if (avatarUrl !== undefined) updateFields.avatarUrl = avatarUrl;
+    if (twitchChannel !== undefined) updateFields.twitchChannel = twitchChannel;
+    if (kickChannel !== undefined) updateFields.kickChannel = kickChannel;
+
+    // Constrói caminhos com notação de ponto para evitar destruir as subpropriedades padrão do Schema
+    if (gameSettings) {
+      for (const [key, value] of Object.entries(gameSettings)) {
+        updateFields[`gameSettings.${key}`] = value;
+      }
+    }
+    if (hardwareSpecs) {
+      for (const [key, value] of Object.entries(hardwareSpecs)) {
+        updateFields[`hardwareSpecs.${key}`] = value;
+      }
+    }
+    if (redItems) {
+      for (const [key, value] of Object.entries(redItems)) {
+        updateFields[`redItems.${key}`] = value;
+      }
+    }
+    
     const updatedUser = await User.findByIdAndUpdate(
       req.userId,
-      { $set: { username, avatarUrl, twitchChannel, kickChannel, gameSettings, hardwareSpecs, redItems } },
+      { $set: updateFields },
       { new: true, runValidators: true }
     );
 
@@ -371,11 +397,9 @@ app.get('/api/stats', autenticarToken, async (req, res) => {
     const user = await User.findById(req.userId);
     let totalFixoReds = 0;
     
-    // BUGFIX 2 CORRIGIDO: Se a subpropriedade existir no mongoose, converte para Objeto JS simples antes de iterar
     if (user && user.redItems) {
       const redItemsObj = user.redItems.toObject ? user.redItems.toObject() : user.redItems;
       totalFixoReds = Object.values(redItemsObj).reduce((a, b) => {
-        // Ignora campos do mongoose como _id se vazados na conversão e valida se é número válido
         return typeof b === 'number' ? a + b : a;
       }, 0);
     }
