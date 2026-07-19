@@ -8,37 +8,32 @@ require('dotenv').config();
 
 const app = express();
 
-// Configuração do CORS dinâmica para aceitar requisições locais e do deploy na Vercel
-app.use(cors({
-  origin: '*', 
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-})); 
-
-// Otimização para uploads pesados de avatares ou imagens em Base64
+// CORREÇÃO: Aumenta o limite do body-parser para aceitar uploads em Base64 sem estourar o limite do Express
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true, parameterLimit: 50000 }));
 
+// Permite conexões de qualquer origem (essencial para o frontend no GitHub Pages/Netlify conversar com este servidor)
+app.use(cors()); 
+
 const MONGO_URI = process.env.MONGO_URI;
+if (!MONGO_URI) {
+  console.error("❌ ERRO CRÍTICO: A variável de ambiente MONGO_URI não foi definida! O deploy vai falhar sem um banco na nuvem.");
+}
+
 const JWT_SECRET = process.env.JWT_SECRET || 'darkcore_secret_key_siege_123';
 
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST || "smtp.mailtrap.io",
-  port: process.env.EMAIL_PORT || 2525,
+  port: parseInt(process.env.EMAIL_PORT) || 2525,
   auth: {
     user: process.env.EMAIL_USER || "your_user",
     pass: process.env.EMAIL_PASS || "your_password"
   }
 });
 
-// Conexão com o Banco de Dados com verificação de estado (essencial para Serverless da Vercel)
-if (MONGO_URI) {
-  mongoose.connect(MONGO_URI)
-    .then(() => console.log('🚀 Database successfully connected!'))
-    .catch(err => console.error('❌ Database connection error:', err));
-} else {
-  console.error('❌ Erro: A variável de ambiente MONGO_URI não foi definida na Vercel!');
-}
+mongoose.connect(MONGO_URI)
+  .then(() => console.log('🚀 Database successfully connected to Cloud Cluster!'))
+  .catch(err => console.error('❌ Database connection error:', err));
 
 // ==========================================
 // 1. MODELAGEM DE DADOS (SCHEMAS)
@@ -55,7 +50,7 @@ const UserSchema = new mongoose.Schema({
   twitchChannel: { type: String, default: '' },
   kickChannel: { type: String, default: '' },
   isLive: { type: Boolean, default: false },
-  livePlatform: { type: String, default: '' }, 
+  livePlatform: { type: String, default: '' },
 
   gameSettings: {
     sensitivity: { type: String, default: 'Standard' },
@@ -78,6 +73,7 @@ const UserSchema = new mongoose.Schema({
     gold_snake: { type: Number, default: 0 },
     golden_helmet: { type: Number, default: 0 },
     capsule_tv: { type: Number, default: 0 },
+    decay: { type: Number, default: 0 }, 
     aerospace_navigator: { type: Number, default: 0 },
     caliburn_model: { type: Number, default: 0 },
     music_box: { type: Number, default: 0 },
@@ -88,11 +84,10 @@ const UserSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-UserSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
+UserSchema.pre('save', async function() {
+  if (!this.isModified('password')) return;
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
-  next();
 });
 
 const User = mongoose.model('User', UserSchema);
@@ -109,17 +104,97 @@ const RaidSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now }
 });
 
-RaidSchema.pre('save', function(next) {
+RaidSchema.pre('save', function() {
   if (this.status === 'Survived') {
     this.netProfit = this.extractedValue - this.loadoutValue;
   } else {
     this.netProfit = -this.loadoutValue;
     this.extractedValue = 0; 
   }
-  next();
 });
 
 const Raid = mongoose.model('Raid', RaidSchema);
+
+// ==========================================
+// FUNÇÕES AUXILIARES DE VALINAÇÃO DE LIVE REAL
+// ==========================================
+
+function extrairUsername(canalUrl, plataforma) {
+  if (!canalUrl) return '';
+  return canalUrl
+    .replace(`https://`, '')
+    .replace(`http://`, '')
+    .replace(`www.`, '')
+    .replace(`${plataforma}.tv/`, '')
+    .replace(`${plataforma}.com/`, '')
+    .split('/')[0]
+    .split('?')[0]
+    .trim();
+}
+
+async function verificarStatusDasStreams() {
+  try {
+    // BUGFIX 1 CORRIGIDO: Se a URI do Mongo estiver vazia ou desconectada durante os intervalos iniciais, não executa a query para evitar travar o Node process.
+    if (mongoose.connection.readyState !== 1) return;
+
+    const usuariosComCanais = await User.find({
+      $or: [
+        { twitchChannel: { $ne: "" } },
+        { kickChannel: { $ne: "" } }
+      ]
+    });
+
+    for (let usuario of usuariosComCanais) {
+      let transmitindoAgora = false;
+      let plataformaAtiva = '';
+
+      const nickTwitch = extrairUsername(usuario.twitchChannel, 'twitch');
+      const nickKick = extrairUsername(usuario.kickChannel, 'kick');
+
+      if (nickTwitch) {
+        try {
+          const res = await fetch(`https://www.twitch.tv/${nickTwitch}`, { 
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' } 
+          });
+          const html = await res.text();
+          if (html.includes('"isLiveBroadcast":true') || html.includes('isLive')) {
+            transmitindoAgora = true;
+            plataformaAtiva = 'twitch';
+          }
+        } catch (e) {
+          console.error(`Erro ao checar Twitch do usuário ${nickTwitch}:`, e.message);
+        }
+      }
+
+      if (!transmitindoAgora && nickKick) {
+        try {
+          const res = await fetch(`https://kick.com/api/v1/channels/${nickKick}`);
+          if (res.ok) {
+            const dados = await res.json();
+            if (dados.livestream && dados.livestream.is_live) {
+              transmitindoAgora = true;
+              plataformaAtiva = 'kick';
+            }
+          }
+        } catch (e) {
+          console.error(`Erro ao checar Kick do usuário ${nickKick}:`, e.message);
+        }
+      }
+
+      if (usuario.isLive !== transmitindoAgora || usuario.livePlatform !== plataformaAtiva) {
+        await User.findByIdAndUpdate(usuario._id, { 
+          isLive: transmitindoAgora, 
+          livePlatform: plataformaAtiva 
+        });
+      }
+    }
+  } catch (err) {
+    console.error("Falha no ciclo de verificação de transmissões:", err);
+  }
+}
+
+setInterval(verificarStatusDasStreams, 3 * 60 * 1000);
+setTimeout(verificarStatusDasStreams, 10000);
 
 // ==========================================
 // 2. MIDDLEWARE DE AUTENTICAÇÃO (JWT)
@@ -211,6 +286,8 @@ app.put('/api/user/profile', autenticarToken, async (req, res) => {
       { new: true, runValidators: true }
     );
 
+    setTimeout(verificarStatusDasStreams, 1000);
+
     return res.json({ message: 'Dashboard config synchronized!', user: updatedUser });
   } catch (error) {
     return res.status(500).json({ error: `Failed to update operator profile: ${error.message}` });
@@ -221,6 +298,7 @@ app.get('/api/streams/live', autenticarToken, async (req, res) => {
   try {
     const liveOperators = await User.find({ isLive: true })
       .select('username avatarUrl twitchChannel kickChannel livePlatform');
+    
     return res.json(liveOperators);
   } catch (error) {
     return res.status(500).json({ error: 'Failed to fetch community streams.' });
@@ -267,8 +345,13 @@ app.get('/api/stats', autenticarToken, async (req, res) => {
     const user = await User.findById(req.userId);
     let totalFixoReds = 0;
     
+    // BUGFIX 2 CORRIGIDO: Se a subpropriedade existir no mongoose, converte para Objeto JS simples antes de iterar
     if (user && user.redItems) {
-      totalFixoReds = Object.values(user.redItems.toObject()).reduce((a, b) => a + b, 0);
+      const redItemsObj = user.redItems.toObject ? user.redItems.toObject() : user.redItems;
+      totalFixoReds = Object.values(redItemsObj).reduce((a, b) => {
+        // Ignora campos do mongoose como _id se vazados na conversão e valida se é número válido
+        return typeof b === 'number' ? a + b : a;
+      }, 0);
     }
 
     const stats = await Raid.aggregate([
@@ -294,16 +377,12 @@ app.get('/api/stats', autenticarToken, async (req, res) => {
   }
 });
 
-// Middleware Global de Erros
 app.use((err, req, res, next) => {
   console.error("Global Error Catcher:", err.stack);
-  res.status(500).json({ error: 'Internal server error processing requested action.' });
+  res.status(500).json({ error: `Internal server error: ${err.message}` });
 });
 
-// Inicialização do Servidor Local (Apenas fora da produção)
 const PORT = process.env.PORT || 5000;
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => console.log(`🔥 Server smoothly executing on port ${PORT}`));
-}
+app.listen(PORT, () => console.log(`🔥 Server smoothly executing on port ${PORT}`));
 
 module.exports = app;
