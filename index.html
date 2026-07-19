@@ -1141,37 +1141,36 @@
         renderizarGraficoLinha(labelsGrafico, historicoLucrosAcumulados);
       } catch (err) { console.error('Error rendering chart and data log', err); }
     }
-
-    function renderizarGraficoLinha(labels, dados) {
-      const ctx = document.getElementById('graficoPatrimonio').getContext('2d');
-      if (chartInstance) { chartInstance.destroy(); }
-      chartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Net Worth Progression (Koen)',
-            data: dados,
-            borderColor: '#f59e0b',
-            backgroundColor: 'rgba(245, 158, 11, 0.1)',
-            borderWidth: 3,
-            tension: 0.3,
-            fill: true,
-            pointBackgroundColor: '#fff'
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } },
-            y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' }
-          }
-        }
-      });
+function renderizarGraficoLinha(labels, dados) {
+  const ctx = document.getElementById('graficoPatrimonio').getContext('2d');
+  if (chartInstance) { chartInstance.destroy(); }
+  
+  chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Net Worth Progression (Koen)',
+        data: dados,
+        borderColor: '#f59e0b',
+        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+        borderWidth: 3,
+        tension: 0.3,
+        fill: true,
+        pointBackgroundColor: '#fff'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } },
+        y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } } // Corrigido: adicionada a '}' para fechar o 'y'
+      }
     }
-
+  });
+}
     async function enviarRaid() {
       const loadoutPuro = Number(document.getElementById('raid-loadout').value.replace(/,/g, '')) || 0;
       const extractedPuro = Number(document.getElementById('raid-extracted').value.replace(/,/g, '')) || 0;
