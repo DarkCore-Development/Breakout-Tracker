@@ -712,6 +712,7 @@
         document.getElementById('tab-raids').classList.add('active');
         document.getElementById('section-raids-view').classList.add('active-view');
         document.getElementById('config-trigger-btn').style.display = 'none';
+        if(chartInstance) { chartInstance.resize(); }
       } else if (tabName === 'profile') {
         document.getElementById('tab-profile').classList.add('active', 'profile-tab-theme');
         document.getElementById('section-profile-view').classList.add('active-view');
@@ -836,7 +837,7 @@
 
         processarDashboardPerfil();
 
-      } catch (err) { console.error('Error fetching operator profile data.'); }
+      } catch (err) { alert('Error fetching operator profile data.'); }
     }
 
     function processarDashboardPerfil() {
@@ -1025,7 +1026,7 @@
             </a>
           `;
         }).join('');
-      } catch (err) { console.error('Error fetching live community channels.'); }
+      } catch (err) { alert('Error fetching live community channels.'); }
     }
 
     async function carregarEstatisticas() {
@@ -1035,7 +1036,7 @@
         document.getElementById('stat-raids').innerText = data.totalRaids || 0;
         document.getElementById('stat-vermelhos').innerText = data.totalVermelhos || 0;
         document.getElementById('stat-patrimonio').innerText = `${(data.patrimonioLiquidoGeral || 0).toLocaleString('en-US')} Koen`;
-      } catch (err) { console.error('Error fetching dashboard statistics'); }
+      } catch (err) { alert('Error fetching dashboard statistics'); }
     }
 
     async function carregarHistoricoEGráfico() {
@@ -1106,7 +1107,7 @@
         }).join('');
 
         renderizarGraficoLinha(labelsGrafico, historicoLucrosAcumulados);
-      } catch (err) { console.error('Error rendering chart and data log', err); }
+      } catch (err) { alert('Error rendering chart and data log'); }
     }
 
     function renderizarGraficoLinha(labels, dados) {
