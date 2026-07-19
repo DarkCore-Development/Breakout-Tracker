@@ -691,7 +691,6 @@
   </div>
 
   <script>
-    // URL alterada para apontar diretamente para o seu Web Service no Render
     const API_URL = 'https://breakout-tracker-ej6b.onrender.com/api';
     let token = localStorage.getItem('token');
     let isLoginMode = true;
@@ -831,7 +830,9 @@
         if(user.redItems) {
           Object.keys(user.redItems).forEach(key => {
             const input = document.getElementById(`red-${key}`);
-            if(input) input.value = user.redItems[key] || 0;
+            if(input) {
+              input.value = user.redItems[key] || 0;
+            }
           });
         }
 
@@ -839,7 +840,7 @@
 
       } catch (err) { console.error('Error fetching operator profile data.'); }
     }
-
+    
     function processarDashboardPerfil() {
       const inputs = document.querySelectorAll('.red-portfolio-input');
       let valorTotalCofre = 0;
@@ -992,6 +993,7 @@
         });
         if (res.ok) {
           processarDashboardPerfil();
+          alert('Vault successfully updated.');
         }
       } catch (err) { alert('Internal error syncing operator data profile.'); }
     }
