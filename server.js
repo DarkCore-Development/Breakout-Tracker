@@ -8,7 +8,7 @@ require('dotenv').config();
 
 const app = express();
 
-// CORREÇÃO: Aumenta o limite do body-parser para aceitar uploads em Base64 sem estourar o limite do Express
+// Otimização para uploads pesados de avatares ou imagens em Base64
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true, parameterLimit: 50000 }));
 
@@ -39,15 +39,13 @@ const UserSchema = new mongoose.Schema({
   password: { type: String, required: true, select: false },
   isVerified: { type: Boolean, default: false },
   
-  // DASHBOARD DE PERFIL DO OPERADOR
   username: { type: String, default: 'Operator_Recruit' },
   avatarUrl: { type: String, default: 'https://i.imgur.com/6EH996s.png' }, 
   
-  // ATUALIZADO: Suporte para ambas as plataformas e flag de live em tempo real
   twitchChannel: { type: String, default: '' },
   kickChannel: { type: String, default: '' },
   isLive: { type: Boolean, default: false },
-  livePlatform: { type: String, default: '' }, // 'twitch' ou 'kick'
+  livePlatform: { type: String, default: '' }, 
 
   gameSettings: {
     sensitivity: { type: String, default: 'Standard' },
@@ -61,7 +59,6 @@ const UserSchema = new mongoose.Schema({
     ram: { type: String, default: '' },
     os: { type: String, default: 'ZenithOS' } 
   },
-  // ADICIONADO: Inventário fixo de itens vermelhos salvos diretamente no perfil
   redItems: {
     secret_document: { type: Number, default: 0 },
     antique_teapot: { type: Number, default: 0 },
@@ -81,10 +78,11 @@ const UserSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-UserSchema.pre('save', async function() {
-  if (!this.isModified('password')) return;
+UserSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) return next();
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
+  next();
 });
 
 const User = mongoose.model('User', UserSchema);
@@ -101,19 +99,20 @@ const RaidSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now }
 });
 
-RaidSchema.pre('save', function() {
+RaidSchema.pre('save', function(next) {
   if (this.status === 'Survived') {
     this.netProfit = this.extractedValue - this.loadoutValue;
   } else {
     this.netProfit = -this.loadoutValue;
     this.extractedValue = 0; 
   }
+  next();
 });
 
 const Raid = mongoose.model('Raid', RaidSchema);
 
 // ==========================================
-// FUNÇÕES AUXILIARES DE VALIDAÇÃO DE LIVE REAL
+// FUNÇÕES AUXILIARES DE VALIDAÇÃO DE LIVE
 // ==========================================
 
 function extrairUsername(canalUrl, plataforma) {
@@ -270,7 +269,6 @@ app.get('/api/user/profile', autenticarToken, async (req, res) => {
   }
 });
 
-// MODIFICADO: Agora aceita e salva o objeto 'redItems' enviado pelo front-end
 app.put('/api/user/profile', autenticarToken, async (req, res) => {
   try {
     const { username, avatarUrl, twitchChannel, kickChannel, gameSettings, hardwareSpecs, redItems } = req.body;
@@ -335,7 +333,6 @@ app.delete('/api/raids/:id', autenticarToken, async (req, res) => {
   }
 });
 
-// MODIFICADO: Altera o cálculo global de itens vermelhos para ler diretamente do perfil atualizado do usuário em vez do histórico acumulado de raids
 app.get('/api/stats', autenticarToken, async (req, res) => {
   try {
     const user = await User.findById(req.userId);
@@ -359,7 +356,7 @@ app.get('/api/stats', autenticarToken, async (req, res) => {
     const resultadoFinal = stats[0] || { totalRaids: 0, patrimonioLiquidoGeral: 0, totalExtraidoValue: 0 };
     return res.json({
       totalRaids: resultadoFinal.totalRaids,
-      totalVermelhos: totalFixoReds, // Sobrescreve o histórico com a quantidade fixa definida no perfil
+      totalVermelhos: totalFixoReds, 
       patrimonioLiquidoGeral: resultadoFinal.patrimonioLiquidoGeral,
       totalExtraidoValue: resultadoFinal.totalExtraidoValue
     });
@@ -368,10 +365,17 @@ app.get('/api/stats', autenticarToken, async (req, res) => {
   }
 });
 
+// Middleware Global de Erros
 app.use((err, req, res, next) => {
   console.error("Global Error Catcher:", err.stack);
-  res.status(500).json({ error: `Internal server error: ${err.message}` });
+  res.status(500).json({ error: 'Internal server error processing requested action.' });
 });
 
+// Inicialização do Servidor Local
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🔥 Server smoothly executing on port ${PORT}`));
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => console.log(`🔥 Server smoothly executing on port ${PORT}`));
+}
+
+// CORREÇÃO ESSENCIAL PARA DEPLOY (VERCEL/SERVERLESS)
+module.exports = app;
