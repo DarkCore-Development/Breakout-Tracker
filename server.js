@@ -18,7 +18,7 @@ app.use(cors());
 const MONGO_URI = process.env.MONGO_URI;
 if (!MONGO_URI) {
   console.error("❌ ERRO CRÍTICO: A variável de ambiente MONGO_URI não foi definida!");
-  process.exit(1); // Encerra a aplicação se não houver banco configurado
+  process.exit(1); 
 }
 
 // EVITE fallback hardcoded em produção para chaves secretas
@@ -37,10 +37,6 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-mongoose.connect(MONGO_URI)
-  .then(() => console.log('🚀 Database successfully connected to Cloud Cluster!'))
-  .catch(err => console.error('❌ Database connection error:', err));
-
 // ==========================================
 // 1. MODELAGEM DE DADOS (SCHEMAS)
 // ==========================================
@@ -52,11 +48,6 @@ const UserSchema = new mongoose.Schema({
   
   username: { type: String, default: 'Operator_Recruit' },
   avatarUrl: { type: String, default: 'https://i.imgur.com/6EH996s.png' }, 
-  
-  twitchChannel: { type: String, default: '' },
-  kickChannel: { type: String, default: '' },
-  isLive: { type: Boolean, default: false },
-  livePlatform: { type: String, default: '' },
 
   gameSettings: {
     sensitivity: { type: String, default: 'Standard' },
@@ -154,113 +145,6 @@ RaidSchema.pre('save', function(next) {
 const Raid = mongoose.model('Raid', RaidSchema);
 
 // ==========================================
-// FUNÇÕES AUXILIARES DE VALIDAÇÃO DE LIVE REAL (CORRIGIDO)
-// ==========================================
-
-function extrairUsername(canalUrl, plataforma) {
-  if (!canalUrl) return '';
-  return canalUrl
-    .replace(`https://`, '')
-    .replace(`http://`, '')
-    .replace(`www.`, '')
-    .replace(`${plataforma}.tv/`, '')
-    .replace(`${plataforma}.com/`, '')
-    .split('/')[0]
-    .split('?')[0]
-    .trim();
-}
-
-async function verificarStatusDasStreams() {
-  try {
-    if (mongoose.connection.readyState !== 1) return;
-
-    const usuariosComCanais = await User.find({
-      $or: [
-        { twitchChannel: { $ne: "" } },
-        { kickChannel: { $ne: "" } }
-      ]
-    });
-
-    // Controla o tempo de requisição para evitar travamento do Event Loop
-    const fetchWithTimeout = (url, options, timeout = 4000) => {
-      return Promise.race([
-        fetch(url, options),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout na plataforma')), timeout))
-      ]);
-    };
-
-    // Criamos o array de promessas paralelas usando .map() em vez de for-of com await
-    const promessas = usuariosComCanais.map(async (usuario) => {
-      let transmitindoAgora = false;
-      let plataformaAtiva = '';
-
-      const nickTwitch = extrairUsername(usuario.twitchChannel, 'twitch');
-      const nickKick = extrairUsername(usuario.kickChannel, 'kick');
-
-      // 1. CHECAGEM DA TWITCH
-      if (nickTwitch) {
-        try {
-          const res = await fetchWithTimeout(`https://www.twitch.tv/${nickTwitch}`, { 
-            headers: { 
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-              'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8'
-            } 
-          });
-          if (res.ok) {
-            const html = await res.text();
-            if (html.includes('"isLiveBroadcast":true') || html.includes('isLive') || html.includes(`"stream":{"id"`)) {
-              transmitindoAgora = true;
-              plataformaAtiva = 'twitch';
-            }
-          }
-        } catch (e) {
-          console.warn(`[Twitch Sync] Não foi possível verificar ${nickTwitch}: ${e.message}`);
-        }
-      }
-
-      // 2. CHECAGEM DA KICK (Só roda se não estiver ativo na Twitch)
-      if (!transmitindoAgora && nickKick) {
-        try {
-          const res = await fetchWithTimeout(`https://kick.com/api/v1/channels/${nickKick}`, {
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-              'Accept': 'application/json'
-            }
-          });
-          if (res.ok) {
-            const dados = await res.json();
-            if (dados.livestream && dados.livestream.is_live) {
-              transmitindoAgora = true;
-              plataformaAtiva = 'kick';
-            }
-          }
-        } catch (e) {
-          console.warn(`[Kick Sync] Não foi possível verificar ${nickKick}: ${e.message}`);
-        }
-      }
-
-      // Evita chamadas e escritas desnecessárias se o status continuar igual
-      if (usuario.isLive !== transmitindoAgora || usuario.livePlatform !== plataformaAtiva) {
-        await User.findByIdAndUpdate(usuario._id, { 
-          isLive: transmitindoAgora, 
-          livePlatform: plataformaAtiva 
-        });
-      }
-    });
-
-    // Executa e resolve todas as checagens simultaneamente no cluster
-    await Promise.allSettled(promessas);
-
-  } catch (err) {
-    console.error("Falha geral no ciclo de sincronização de lives:", err);
-  }
-}
-
-// Ciclo de varredura automatizado (Executa a cada 3 minutos, e roda uma vez 10s após ligar)
-setInterval(verificarStatusDasStreams, 3 * 60 * 1000);
-setTimeout(verificarStatusDasStreams, 10000);
-
-// ==========================================
 // 2. MIDDLEWARE DE AUTENTICAÇÃO (JWT)
 // ==========================================
 const autenticarToken = (req, res, next) => {
@@ -303,6 +187,7 @@ app.post('/api/auth/register', async (req, res) => {
         </div>`
     };
 
+    // Dispara o e-mail em background sem travar a resposta para o usuário
     transporter.sendMail(mailOptions, (mailErr) => {
       if (mailErr) console.error("Email delivery failed:", mailErr.message);
     });
@@ -342,13 +227,11 @@ app.get('/api/user/profile', autenticarToken, async (req, res) => {
 
 app.put('/api/user/profile', autenticarToken, async (req, res) => {
   try {
-    const { username, avatarUrl, twitchChannel, kickChannel, gameSettings, hardwareSpecs, redItems } = req.body;
+    const { username, avatarUrl, gameSettings, hardwareSpecs, redItems } = req.body;
     
     const updateFields = {};
     if (username !== undefined) updateFields.username = username;
     if (avatarUrl !== undefined) updateFields.avatarUrl = avatarUrl;
-    if (twitchChannel !== undefined) updateFields.twitchChannel = twitchChannel;
-    if (kickChannel !== undefined) updateFields.kickChannel = kickChannel;
 
     if (gameSettings) {
       for (const [key, value] of Object.entries(gameSettings)) {
@@ -372,23 +255,9 @@ app.put('/api/user/profile', autenticarToken, async (req, res) => {
       { new: true, runValidators: true }
     );
 
-    // Dispara checagem imediata um segundo após atualização de canal
-    setTimeout(verificarStatusDasStreams, 1000);
-
     return res.json({ message: 'Dashboard config synchronized!', user: updatedUser });
   } catch (error) {
     return res.status(500).json({ error: `Failed to update operator profile: ${error.message}` });
-  }
-});
-
-app.get('/api/streams/live', async (req, res) => {
-  try {
-    const liveOperators = await User.find({ isLive: true })
-      .select('username avatarUrl twitchChannel kickChannel livePlatform');
-    
-    return res.json(liveOperators);
-  } catch (error) {
-    return res.status(500).json({ error: 'Failed to fetch community streams.' });
   }
 });
 
@@ -434,11 +303,14 @@ app.get('/api/stats', autenticarToken, async (req, res) => {
     
     if (user && user.redItems) {
       const redItemsObj = user.redItems.toObject ? user.redItems.toObject() : user.redItems;
-      totalFixoReds = Object.values(redItemsObj).reduce((a, b) => {
-        return typeof b === 'number' ? a + b : a;
-      }, 0);
+      for (const value of Object.values(redItemsObj)) {
+        if (typeof value === 'number') {
+          totalFixoReds += value;
+        }
+      }
     }
 
+    // Correção essencial: usando instanciamento correto do ObjectId
     const stats = await Raid.aggregate([
       { $match: { userId: new mongoose.Types.ObjectId(req.userId) } },
       { $group: {
@@ -450,7 +322,6 @@ app.get('/api/stats', autenticarToken, async (req, res) => {
       }
     ]);
 
-    // Previne quebra caso o array retornado pelo aggregate seja vazio (usuário sem raids)
     const resultadoFinal = stats[0] || { totalRaids: 0, patrimonioLiquidoGeral: 0, totalExtraidoValue: 0 };
     return res.json({
       totalRaids: resultadoFinal.totalRaids,
@@ -463,12 +334,22 @@ app.get('/api/stats', autenticarToken, async (req, res) => {
   }
 });
 
+// Middleware Global de Erros
 app.use((err, req, res, next) => {
   console.error("Global Error Catcher:", err.stack);
   res.status(500).json({ error: `Internal server error: ${err.message}` });
 });
 
+// Conecta ao Banco de Dados e então inicializa o servidor Express
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🔥 Server smoothly executing on port ${PORT}`));
+mongoose.connect(MONGO_URI)
+  .then(() => {
+    console.log('🚀 Database successfully connected to Cloud Cluster!');
+    app.listen(PORT, () => console.log(`🔥 Server smoothly executing on port ${PORT}`));
+  })
+  .catch(err => {
+    console.error('❌ Database connection error:', err);
+    process.exit(1); // Encerra o processo caso falhe ao iniciar a conexão primária
+  });
 
 module.exports = app;
