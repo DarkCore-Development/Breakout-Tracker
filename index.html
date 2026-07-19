@@ -15,6 +15,7 @@
       --green-cash: #10b981;
       --yellow-alert: #eab308;
       --twitch-purple: #9146ff;
+      --kick-green: #53fc18;
       --border: #1e293b;
     }
 
@@ -67,12 +68,16 @@
     .val.red { color: var(--red-loot); }
     .val.cash { color: var(--green-cash); }
 
-    .streams-panel { background: linear-gradient(135deg, #111722 0%, #171226 100%); border: 1px solid var(--twitch-purple); margin-bottom: 30px; padding: 20px; border-radius: 10px; }
+    .streams-panel { background: linear-gradient(135deg, #111722 0%, #111e19 100%); border: 1px solid var(--border); margin-bottom: 30px; padding: 20px; border-radius: 10px; }
     .streams-container { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 15px; }
     .stream-card { background: rgba(9, 13, 20, 0.6); border: 1px solid rgba(145, 70, 255, 0.3); padding: 12px 18px; border-radius: 8px; display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; position: relative; overflow: hidden; transition: transform 0.2s; }
-    .stream-card:hover { transform: translateY(-2px); border-color: var(--twitch-purple); background: rgba(23, 18, 38, 0.8); }
+    .stream-card:hover { transform: translateY(-2px); background: rgba(23, 18, 38, 0.8); }
+    .stream-card.twitch:hover { border-color: var(--twitch-purple); }
+    .stream-card.kick:hover { border-color: var(--kick-green); }
     .stream-avatar-wrap { position: relative; }
-    .stream-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid var(--twitch-purple); }
+    .stream-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; }
+    .stream-card.twitch .stream-avatar { border-color: var(--twitch-purple); }
+    .stream-card.kick .stream-avatar { border-color: var(--kick-green); }
     .live-badge { position: absolute; bottom: -4px; right: 5px; background: var(--red-loot); color: #fff; font-size: 9px; padding: 2px 5px; font-weight: 900; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; animation: pulse 1.5s infinite; }
 
     @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
@@ -153,7 +158,7 @@
       <!-- LIVE STREAMS -->
       <div class="streams-panel">
         <div style="font-size: 14px; font-weight: 800; color: #fff; text-transform: uppercase; display: flex; align-items: center; gap: 8px;">
-          <span style="color: var(--twitch-purple);">🔮</span> Live Now on Twitch (Community Operators)
+          <span>🌐</span> Live Now (Community Operators)
         </div>
         <div class="streams-container" id="live-operators-list">
           <div style="font-size: 13px; color: #64748b;">No operators are currently streaming.</div>
@@ -275,8 +280,15 @@
               </div>
             </div>
             <div>
-              <h4 style="font-size: 13px; color: var(--twitch-purple); margin-bottom: 12px; text-transform: uppercase;">Twitch Live Sync</h4>
-              <div class="form-group"><label>Twitch Channel Name / Link</label><input type="text" id="prof-twitch" placeholder="e.g. ttv_username"></div>
+              <h4 style="font-size: 13px; color: var(--twitch-purple); margin-bottom: 12px; text-transform: uppercase;">Stream Integration</h4>
+              <div class="form-group">
+                <label>Twitch Channel Name</label>
+                <input type="text" id="prof-twitch" placeholder="e.g. ttv_username">
+              </div>
+              <div class="form-group">
+                <label style="color: var(--kick-green);">Kick Channel Name</label>
+                <input type="text" id="prof-kick" placeholder="e.g. kick_username">
+              </div>
               <h4 style="font-size: 13px; color: var(--accent); margin-bottom: 12px; text-transform: uppercase;">In-Game Configs</h4>
               <div class="form-group" style="margin-bottom: 0;"><label>Mouse Sensitivity / DPI</label>
                 <div style="display: flex; gap: 10px;">
@@ -816,6 +828,7 @@
           base64AvatarStr = user.avatarUrl; 
         }
         if(user.twitchChannel) document.getElementById('prof-twitch').value = user.twitchChannel;
+        if(user.kickChannel) document.getElementById('prof-kick').value = user.kickChannel;
         if(user.gameSettings) {
           document.getElementById('prof-sens').value = user.gameSettings.sensitivity || '';
           document.getElementById('prof-dpi').value = user.gameSettings.dpi || '';
@@ -929,6 +942,7 @@
         username: document.getElementById('prof-username').value || 'Operator_Recruit',
         avatarUrl: base64AvatarStr || 'https://i.imgur.com/6EH996s.png', 
         twitchChannel: document.getElementById('prof-twitch').value || '',
+        kickChannel: document.getElementById('prof-kick').value || '',
         gameSettings: {
           sensitivity: document.getElementById('prof-sens').value,
           dpi: Number(document.getElementById('prof-dpi').value) || 800
@@ -1013,16 +1027,33 @@
           return;
         }
         container.innerHTML = lives.map(op => {
-          const twitchUser = op.twitchChannel.replace('https://twitch.tv/', '').replace('twitch.tv/', '');
+          let platformClass = 'twitch';
+          let streamUrl = '#';
+          let displayUrl = '';
+
+          if (op.kickChannel) {
+            platformClass = 'kick';
+            const kickUser = op.kickChannel.replace('https://kick.com/', '').replace('kick.com/', '');
+            streamUrl = `https://kick.com/${kickUser}`;
+            displayUrl = `kick.com/${kickUser}`;
+          } else if (op.twitchChannel) {
+            platformClass = 'twitch';
+            const twitchUser = op.twitchChannel.replace('https://twitch.tv/', '').replace('twitch.tv/', '');
+            streamUrl = `https://twitch.tv/${twitchUser}`;
+            displayUrl = `twitch.tv/${twitchUser}`;
+          } else {
+            return '';
+          }
+
           return `
-            <a href="https://twitch.tv/${twitchUser}" target="_blank" class="stream-card">
+            <a href="${streamUrl}" target="_blank" class="stream-card ${platformClass}">
               <div class="stream-avatar-wrap">
                 <img src="${op.avatarUrl || 'https://i.imgur.com/6EH996s.png'}" class="stream-avatar" alt="Live">
                 <div class="live-badge">Live</div>
               </div>
               <div>
                 <div style="font-weight: 700; font-size: 14px; color: #fff;">${op.username}</div>
-                <div style="font-size: 11px; color: #9146ff; font-weight: 600;">twitch.tv/${twitchUser}</div>
+                <div style="font-size: 11px; font-weight: 600; color: ${platformClass === 'kick' ? 'var(--kick-green)' : 'var(--twitch-purple)'}">${displayUrl}</div>
               </div>
             </a>
           `;
