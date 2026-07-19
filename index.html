@@ -991,7 +991,6 @@
           body: JSON.stringify(payload)
         });
         if (res.ok) {
-          alert('Vault quantities synced and saved successfully!');
           processarDashboardPerfil();
         }
       } catch (err) { alert('Internal error syncing operator data profile.'); }
