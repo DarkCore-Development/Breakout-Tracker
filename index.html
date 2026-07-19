@@ -14,8 +14,6 @@
       --red-loot: #ef4444;
       --green-cash: #10b981;
       --yellow-alert: #eab308;
-      --twitch-purple: #9146ff;
-      --kick-green: #53fc18;
       --border: #1e293b;
     }
 
@@ -67,30 +65,6 @@
     
     .val.red { color: var(--red-loot); }
     .val.cash { color: var(--green-cash); }
-
-    .streams-panel { background: #111722; border: 1px solid var(--border); margin-bottom: 30px; padding: 22px; border-radius: 10px; }
-    .platforms-wrapper { display: grid; grid-template-columns: 1fr; gap: 20px; margin-top: 15px; }
-    @media (min-width: 768px) { .platforms-wrapper { grid-template-columns: 1fr 1fr; } }
-    
-    .platform-block { background: #090d14; border: 1px solid var(--border); border-radius: 8px; padding: 15px; }
-    .platform-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
-    .platform-title.twitch { color: var(--twitch-purple); }
-    .platform-title.kick { color: var(--kick-green); }
-    
-    .streams-container { display: flex; gap: 12px; flex-wrap: wrap; }
-    .stream-card { background: #111722; border: 1px solid var(--border); padding: 10px 14px; border-radius: 6px; display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; transition: transform 0.2s, background 0.2s; min-width: 200px; }
-    .stream-card:hover { transform: translateY(-2px); background: #161f30; }
-    .stream-card.twitch:hover { border-color: var(--twitch-purple); }
-    .stream-card.kick:hover { border-color: var(--kick-green); }
-    
-    .stream-avatar-wrap { position: relative; }
-    .stream-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; }
-    .stream-card.twitch .stream-avatar { border: 2px solid var(--twitch-purple); }
-    .stream-card.kick .stream-avatar { border: 2px solid var(--kick-green); }
-    
-    .live-badge { position: absolute; bottom: -4px; right: -2px; background: var(--red-loot); color: #fff; font-size: 8px; padding: 1px 4px; font-weight: 900; border-radius: 3px; text-transform: uppercase; animation: pulse 1.5s infinite; }
-
-    @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
 
     .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 30px; margin-bottom: 30px; }
     @media (min-width: 1100px) { .dashboard-grid { grid-template-columns: 1fr 1.3fr; } }
@@ -164,32 +138,6 @@
           <button onclick="logout()" style="width: auto; padding: 8px 18px; background: #ef4444; color: white; border: none; border-radius:6px; font-size:13px; font-weight: bold; cursor: pointer;">Logout</button>
         </div>
       </header>
-
-      <!-- LIVE STREAMS -->
-      <div class="streams-panel" id="main-streams-panel">
-        <div style="font-size: 14px; font-weight: 800; color: #fff; text-transform: uppercase; display: flex; align-items: center; gap: 8px;">
-          <span>🌐</span> Live Now (Community Operators)
-        </div>
-        <div class="platforms-wrapper" id="platforms-grid-container">
-          
-          <!-- LIVES TWITCH -->
-          <div class="platform-block">
-            <div class="platform-title twitch">🟣 Twitch Broadcasts</div>
-            <div class="streams-container" id="twitch-live-container">
-              <div style="font-size: 13px; color: #64748b;">No operators live.</div>
-            </div>
-          </div>
-
-          <!-- LIVES KICK -->
-          <div class="platform-block">
-            <div class="platform-title kick">🟢 Kick Broadcasts</div>
-            <div class="streams-container" id="kick-live-container">
-              <div style="font-size: 13px; color: #64748b;">No operators live.</div>
-            </div>
-          </div>
-
-        </div>
-      </div>
 
       <!-- TAB 1: RAIDS -->
       <div id="section-raids-view" class="view-section active-view">
@@ -306,17 +254,8 @@
               </div>
             </div>
             <div>
-              <h4 style="font-size: 13px; color: var(--twitch-purple); margin-bottom: 12px; text-transform: uppercase;">Stream Integration</h4>
-              <div class="form-group">
-                <label>Twitch Channel Name</label>
-                <input type="text" id="prof-twitch" placeholder="e.g. ttv_username">
-              </div>
-              <div class="form-group">
-                <label style="color: var(--kick-green);">Kick Channel Name</label>
-                <input type="text" id="prof-kick" placeholder="e.g. kick_username">
-              </div>
               <h4 style="font-size: 13px; color: var(--accent); margin-bottom: 12px; text-transform: uppercase;">In-Game Configs</h4>
-              <div class="form-group" style="margin-bottom: 0;"><label>Mouse Sensitivity / DPI</label>
+              <div class="form-group"><label>Mouse Sensitivity / DPI</label>
                 <div style="display: flex; gap: 10px;">
                   <input type="text" id="prof-sens" placeholder="Sens" style="width: 60%;">
                   <input type="number" id="prof-dpi" placeholder="DPI" style="width: 40%;">
@@ -759,9 +698,20 @@
     }
 
     function formatarMoedaInput(input) {
+      let cursor = input.selectionStart;
+      let valorAntigo = input.value;
       let valor = input.value.replace(/\D/g, "");
       if (valor === "") valor = "0";
-      input.value = Number(valor).toLocaleString('en-US');
+      let valorFormatado = Number(valor).toLocaleString('en-US');
+      input.value = valorFormatado;
+      
+      let diferenca = valorFormatado.length - valorAntigo.length;
+      input.setSelectionRange(cursor + diferenca, cursor + diferenca);
+    }
+
+    function obterValorNumericoLimpo(idElemento) {
+      let valStr = document.getElementById(idElemento).value || "0";
+      return Number(valStr.replace(/,/g, '')) || 0;
     }
 
     function handleAvatarFileSelect(input) {
@@ -828,7 +778,6 @@
       document.getElementById('dashboard-screen').style.display = 'block';
       renderizarPainelCompleto();
       carregarDadosPerfil();
-      carregarLivesDaComunidade(); 
       switchTab('raids');
     }
 
@@ -853,8 +802,6 @@
           document.getElementById('user-display-avatar').src = user.avatarUrl;
           base64AvatarStr = user.avatarUrl; 
         }
-        if(user.twitchChannel) document.getElementById('prof-twitch').value = user.twitchChannel;
-        if(user.kickChannel) document.getElementById('prof-kick').value = user.kickChannel;
         if(user.gameSettings) {
           document.getElementById('prof-sens').value = user.gameSettings.sensitivity || '';
           document.getElementById('prof-dpi').value = user.gameSettings.dpi || '';
@@ -929,17 +876,22 @@
       const ctx = document.getElementById('graficoPerfilDonut').getContext('2d');
       if (chartDonutInstance) { chartDonutInstance.destroy(); }
 
-      if (dados.length === 0) {
-        labels = ['No Items Saved'];
-        dados = [1];
+      let visualDados = [...dados];
+      let visualLabels = [...labels];
+      let displayLegend = true;
+
+      if (visualDados.length === 0) {
+        visualLabels = ['No Items Saved'];
+        visualDados = [1];
+        displayLegend = false;
       }
 
       chartDonutInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
-          labels: labels,
+          labels: visualLabels,
           datasets: [{
-            data: dados,
+            data: visualDados,
             backgroundColor: [
               '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', 
               '#ec4899', '#14b8a6', '#f43f5e', '#06b6d4', '#10b981',
@@ -954,7 +906,7 @@
           maintainAspectRatio: false,
           plugins: {
             legend: {
-              display: dados.length > 0 && labels[0] !== 'No Items Saved',
+              display: displayLegend,
               position: 'right',
               labels: { color: '#94a3b8', font: { size: 11 } }
             }
@@ -967,8 +919,6 @@
       const payload = {
         username: document.getElementById('prof-username').value || 'Operator_Recruit',
         avatarUrl: base64AvatarStr || 'https://i.imgur.com/6EH996s.png', 
-        twitchChannel: document.getElementById('prof-twitch').value || '',
-        kickChannel: document.getElementById('prof-kick').value || '',
         gameSettings: {
           sensitivity: document.getElementById('prof-sens').value,
           dpi: Number(document.getElementById('prof-dpi').value) || 800
@@ -1033,7 +983,7 @@
         });
         if (res.ok) {
           processarDashboardPerfil();
-          alert('Vault successfully updated.');
+          alert('Vault and Profile successfully updated.');
         }
       } catch (err) { alert('Internal error syncing operator data profile.'); }
     }
@@ -1043,80 +993,14 @@
       toggleProfileConfigPanel();
     }
 
-    async function carregarLivesDaComunidade() {
-      try {
-        const res = await fetch(`${API_URL}/streams/live`, { headers: { 'Authorization': `Bearer ${token}` } });
-        const dadosSeparados = await res.json();
-        
-        const twitchContainer = document.getElementById('twitch-live-container');
-        const kickContainer = document.getElementById('kick-live-container');
-        const mainPanel = document.getElementById('main-streams-panel');
-
-        const renderizarCardStream = (op, plataforma) => {
-          let streamUrl = '#';
-          let displayUrl = '';
-          const corPlataforma = plataforma === 'kick' ? 'var(--kick-green)' : 'var(--twitch-purple)';
-
-          if (plataforma === 'kick' && op.kickChannel) {
-            const kickUser = op.kickChannel.replace('https://kick.com/', '').replace('kick.com/', '');
-            streamUrl = `https://kick.com/${kickUser}`;
-            displayUrl = `kick.com/${kickUser}`;
-          } else if (plataforma === 'twitch' && op.twitchChannel) {
-            const twitchUser = op.twitchChannel.replace('https://twitch.tv/', '').replace('twitch.tv/', '');
-            streamUrl = `https://twitch.tv/${twitchUser}`;
-            displayUrl = `twitch.tv/${twitchUser}`;
-          } else {
-            return '';
-          }
-
-          return `
-            <a href="${streamUrl}" target="_blank" class="stream-card ${plataforma}">
-              <div class="stream-avatar-wrap">
-                <img src="${op.avatarUrl || 'https://i.imgur.com/6EH996s.png'}" class="stream-avatar" alt="Live">
-                <div class="live-badge">Live</div>
-              </div>
-              <div>
-                <div style="font-weight: 700; font-size: 14px; color: #fff;">${op.username}</div>
-                <div style="font-size: 11px; font-weight: 600; color: ${corPlataforma}">${displayUrl}</div>
-              </div>
-            </a>
-          `;
-        };
-
-        const temTwitch = dadosSeparados.twitch && dadosSeparados.twitch.length > 0;
-        const temKick = dadosSeparados.kick && dadosSeparados.kick.length > 0;
-
-        if (!temTwitch && !temKick) {
-          mainPanel.style.display = 'none';
-          return;
-        } else {
-          mainPanel.style.display = 'block';
-        }
-
-        if (temTwitch) {
-          twitchContainer.innerHTML = dadosSeparados.twitch.map(op => renderizarCardStream(op, 'twitch')).join('');
-        } else {
-          twitchContainer.innerHTML = '<div style="font-size: 13px; color: #64748b;">No operators live.</div>';
-        }
-
-        if (temKick) {
-          kickContainer.innerHTML = dadosSeparados.kick.map(op => renderizarCardStream(op, 'kick')).join('');
-        } else {
-          kickContainer.innerHTML = '<div style="font-size: 13px; color: #64748b;">No operators live.</div>';
-        }
-
-      } catch (err) { 
-        console.error('Error fetching live community channels.', err); 
-      }
-    }
-
     async function carregarEstatisticas() {
       try {
         const res = await fetch(`${API_URL}/stats`, { headers: { 'Authorization': `Bearer ${token}` } });
         const data = await res.json();
         document.getElementById('stat-raids').innerText = data.totalRaids || 0;
-        document.getElementById('stat-vermelhos').innerText = data.totalVermelhos || 0;
         document.getElementById('stat-patrimonio').innerText = `${(data.patrimonioLiquidoGeral || 0).toLocaleString('en-US')} Koen`;
+        
+        document.getElementById('stat-vermelhos').innerText = 0; 
       } catch (err) { console.error('Error fetching dashboard statistics'); }
     }
 
@@ -1128,6 +1012,7 @@
         
         if (!raids || raids.length === 0) {
           tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748b;">No records found.</td></tr>';
+          document.getElementById('stat-vermelhos').innerText = 0; 
           if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
           return;
         }
@@ -1135,6 +1020,7 @@
         let totalSurvived = 0;
         let totalCustoKits = 0;
         let totalLucroBruto = 0;
+        let totalVermelhosRaids = 0; 
         let historicoLucrosAcumulados = [];
         let labelsGrafico = [];
         let somaAcumulada = 0;
@@ -1144,10 +1030,13 @@
           if (raid.status === 'Survived') totalSurvived++;
           totalCustoKits += raid.loadoutValue;
           totalLucroBruto += raid.extractedValue;
+          totalVermelhosRaids += (raid.redItemsCount || 0); 
           somaAcumulada += raid.netProfit;
           historicoLucrosAcumulados.push(somaAcumulada);
           labelsGrafico.push(`Raid ${index + 1}`);
         });
+
+        document.getElementById('stat-vermelhos').innerText = totalVermelhosRaids;
 
         const srRate = raids.length > 0 ? ((totalSurvived / raids.length) * 100).toFixed(0) : 0;
         document.getElementById('stat-sr').innerText = `${srRate}% Survival Rate`;
@@ -1223,8 +1112,8 @@
     }
 
     async function enviarRaid() {
-      const loadoutPuro = Number(document.getElementById('raid-loadout').value.replace(/,/g, '')) || 0;
-      const extractedPuro = Number(document.getElementById('raid-extracted').value.replace(/,/g, '')) || 0;
+      const loadoutPuro = obterValorNumericoLimpo('raid-loadout');
+      const extractedPuro = obterValorNumericoLimpo('raid-extracted');
       const totalRedsCount = Math.max(0, parseInt(document.getElementById('raid-red-count').value) || 0);
 
       const bodyData = {
