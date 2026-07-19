@@ -51,10 +51,9 @@
     .file-upload-btn:hover { border-color: var(--accent); background: #1e293b; }
     .file-upload-wrapper input[type="file"] { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
 
-    .auth-btn { width: 100%; padding: 14px; background: var(--accent); border: none; color: #000; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 15px; text-transform: uppercase; transition: opacity 0.2s; }
-    .auth-btn:hover { opacity: 0.9; }
-    .toggle-auth { text-align: center; margin-top: 20px; font-size: 14px; color: #64748b; cursor: pointer; user-select: none; }
-    .toggle-auth:hover { color: #fff; }
+    button { width: 100%; padding: 14px; background: var(--accent); border: none; color: #000; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 15px; text-transform: uppercase; transition: opacity 0.2s; }
+    button:hover { opacity: 0.9; }
+    .toggle-auth { text-align: center; margin-top: 20px; font-size: 14px; color: #64748b; cursor: pointer; }
 
     #dashboard-screen { display: none; }
     .view-section { display: none; }
@@ -133,8 +132,8 @@
       <h2 id="auth-title" style="margin-bottom: 25px; font-weight: 800; color: #fff; text-align: center;">Sign In to Tracker</h2>
       <div class="form-group"><label>Email Address</label><input type="email" id="auth-email" placeholder="youremail@example.com"></div>
       <div class="form-group"><label>Password</label><input type="password" id="auth-password" placeholder="••••••••"></div>
-      <button type="button" class="auth-btn" id="btn-auth" onclick="handleAuth()">Sign In</button>
-      <div id="btn-toggle-mode" class="toggle-auth" onclick="toggleAuthMode()">Don't have an account? Sign Up Here</div>
+      <button id="btn-auth" onclick="handleAuth()">Sign In</button>
+      <div class="toggle-auth" onclick="toggleAuthMode()">Don't have an account? Sign Up Here</div>
     </div>
 
     <!-- DASHBOARD SCREEN -->
@@ -143,16 +142,16 @@
         <div style="display: flex; align-items: center; gap: 25px;">
           <h1>Breakout <span>Tracker</span></h1>
           <div class="nav-tabs">
-            <button type="button" class="tab-btn active" id="tab-raids" onclick="switchTab('raids')">⚔️ Raids Dashboard</button>
-            <button type="button" class="tab-btn" id="tab-profile" onclick="switchTab('profile')">📂 Profile Portfolio</button>
+            <button class="tab-btn active" id="tab-raids" onclick="switchTab('raids')">⚔️ Raids Dashboard</button>
+            <button class="tab-btn" id="tab-profile" onclick="switchTab('profile')">📂 Profile Portfolio</button>
           </div>
         </div>
         
         <div class="header-user-zone">
           <img id="user-display-avatar" class="header-avatar" src="https://i.imgur.com/6EH996s.png" alt="Avatar">
           <span id="user-display-name" class="header-username">Operator_Recruit</span>
-          <button type="button" class="btn-secondary" id="config-trigger-btn" style="display: none;" onclick="toggleProfileConfigPanel()">⚙️ Edit Setup & Identity</button>
-          <button type="button" onclick="logout()" style="width: auto; padding: 8px 18px; background: #ef4444; color: white; border-radius:6px; font-size:13px; font-weight: bold; cursor: pointer;">Logout</button>
+          <button class="btn-secondary" id="config-trigger-btn" style="display: none;" onclick="toggleProfileConfigPanel()">⚙️ Edit Setup & Identity</button>
+          <button onclick="logout()" style="width: auto; padding: 8px 18px; background: #ef4444; color: white; border-radius:6px; font-size:13px;">Logout</button>
         </div>
       </header>
 
@@ -240,7 +239,7 @@
                 <input type="number" id="raid-red-count" value="0" min="0">
               </div>
             </div>
-            <button type="button" onclick="enviarRaid()">Publish Raid Entry</button>
+            <button onclick="enviarRaid()">Publish Raid Entry</button>
           </div>
 
           <div class="panel">
@@ -265,7 +264,7 @@
         <div id="profile-config-panel" class="panel">
           <div class="panel-title profile-accent">
             <span>👤 Operator Profile & Hardware Settings</span>
-            <button type="button" class="btn-secondary" style="padding: 4px 10px; font-size: 11px;" onclick="toggleProfileConfigPanel()">Close Config ✕</button>
+            <button class="btn-secondary" style="padding: 4px 10px; font-size: 11px;" onclick="toggleProfileConfigPanel()">Close Config ✕</button>
           </div>
           
           <div class="profile-grid-fields">
@@ -312,7 +311,7 @@
               <div class="form-group"><label>Operating System</label><input type="text" id="prof-os" value="ZenithOS"></div>
             </div>
           </div>
-          <button type="button" onclick="salvarConfiguracoesPerfil()" style="background: var(--green-cash); color: #fff; max-width: 200px;">Save Setup Data</button>
+          <button onclick="salvarConfiguracoesPerfil()" style="background: var(--green-cash); color: #fff; max-width: 200px;">Save Setup Data</button>
         </div>
 
         <div style="margin-bottom: 20px; font-weight: 800; color: var(--red-loot); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">
@@ -357,7 +356,6 @@
             </div>
             
             <div class="red-items-box" style="max-height: 560px;">
-              <!-- OS SEUS ITENS DO COFRE PERMANECEM EXATAMENTE IGUAIS -->
               <div class="red-item-row">
                 <div class="item-info-side">
                   <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=LION" alt="Golden Lion Statue">
@@ -365,6 +363,7 @@
                 </div>
                 <input type="number" class="red-portfolio-input" id="red-gold_lion" data-price="1500000" data-name="Golden Lion Statue" value="0" min="0" onchange="processarDashboardPerfil()">
               </div>
+
               <div class="red-item-row">
                 <div class="item-info-side">
                   <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=JET" alt="KM903 Airborne Propulsion Unit">
@@ -372,6 +371,7 @@
                 </div>
                 <input type="number" class="red-portfolio-input" id="red-km903_jet" data-price="800000" data-name="KM903 Airborne Unit" value="0" min="0" onchange="processarDashboardPerfil()">
               </div>
+
               <div class="red-item-row">
                 <div class="item-info-side">
                   <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=DOC" alt="Secret Document">
@@ -379,6 +379,7 @@
                 </div>
                 <input type="number" class="red-portfolio-input" id="red-secret_document" data-price="16100000" data-name="Secret Document" value="0" min="0" onchange="processarDashboardPerfil()">
               </div>
+
               <div class="red-item-row">
                 <div class="item-info-side">
                   <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=UTO" alt="Utopia Core">
@@ -386,6 +387,7 @@
                 </div>
                 <input type="number" class="red-portfolio-input" id="red-utopia" data-price="4500000" data-name="Utopia Core" value="0" min="0" onchange="processarDashboardPerfil()">
               </div>
+
               <div class="red-item-row">
                 <div class="item-info-side">
                   <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=MASK" alt="Replica Mask">
@@ -393,6 +395,7 @@
                 </div>
                 <input type="number" class="red-portfolio-input" id="red-replica_mask" data-price="1600000" data-name="Replica Mask" value="0" min="0" onchange="processarDashboardPerfil()">
               </div>
+
               <div class="red-item-row">
                 <div class="item-info-side">
                   <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=FRAME" alt="'Dawn' Painting">
@@ -400,6 +403,7 @@
                 </div>
                 <input type="number" class="red-portfolio-input" id="red-alvorada_frame" data-price="1600000" data-name="'Dawn' Painting" value="0" min="0" onchange="processarDashboardPerfil()">
               </div>
+
               <div class="red-item-row">
                 <div class="item-info-side">
                   <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=TV" alt="Capsule TV">
@@ -407,6 +411,7 @@
                 </div>
                 <input type="number" class="red-portfolio-input" id="red-capsule_tv" data-price="1600000" data-name="Capsule TV" value="0" min="0" onchange="processarDashboardPerfil()">
               </div>
+
               <div class="red-item-row">
                 <div class="item-info-side">
                   <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=CAGE" alt="Golden Cage">
@@ -414,8 +419,281 @@
                 </div>
                 <input type="number" class="red-portfolio-input" id="red-music_box" data-price="1600000" data-name="Golden Cage" value="0" min="0" onchange="processarDashboardPerfil()">
               </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=NAV" alt="Aerospace Navigator">
+                  <label for="red-aerospace_navigator">Aerospace Navigator <span>~1,550,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-aerospace_navigator" data-price="1550000" data-name="Aerospace Navigator" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=STAT" alt="Majestic Sculpture">
+                  <label for="red-majestic_sculpture">Majestic Sculpture <span>~1,550,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-majestic_sculpture" data-price="1550000" data-name="Majestic Sculpture" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=CLS" alt="CLS Satellite Link">
+                  <label for="red-cls_satellite">CLS Satellite Link <span>~1,500,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-cls_satellite" data-price="1500000" data-name="CLS Satellite Link" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=FAE" alt="Phaeton Watch">
+                  <label for="red-faeton">Phaeton Watch <span>~1,500,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-faeton" data-price="1500000" data-name="Phaeton Watch" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=EEG" alt="EEG Helmet Record">
+                  <label for="red-eeg">EEG Helmet Record <span>~1,500,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-eeg" data-price="1500000" data-name="EEG Helmet Record" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=PROT" alt="Prototype Sphere">
+                  <label for="red-prototype">Prototype Sphere <span>~1,500,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-prototype" data-price="1500000" data-name="Prototype Sphere" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=MATR" alt="Verdad Matrix">
+                  <label for="red-matriz_verdad">Verdad Matrix <span>~1,500,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-matriz_verdad" data-price="1500000" data-name="Verdad Matrix" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=CUBE" alt="Chaotic Matter">
+                  <label for="red-chaotic_matter">Chaotic Matter <span>~1,500,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-chaotic_matter" data-price="1500000" data-name="Chaotic Matter" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=TGT" alt="Target Positioning Module">
+                  <label for="red-target_module">Target Pos. Module <span>~1,450,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-target_module" data-price="1450000" data-name="Target Pos. Module" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=NECK" alt="Gemstone Necklace">
+                  <label for="red-gem_necklace">Gemstone Necklace <span>~1,450,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-gem_necklace" data-price="1450000" data-name="Gemstone Necklace" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=SNAK" alt="Golden Snake Statue">
+                  <label for="red-gold_snake">Golden Snake Statue <span>~1,400,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-gold_snake" data-price="1400000" data-name="Golden Snake Statue" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=POT" alt="Antique Teapot">
+                  <label for="red-antique_teapot">Antique Teapot <span>~1,400,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-antique_teapot" data-price="1400000" data-name="Antique Teapot" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=CLAY" alt="Clay of Destiny">
+                  <label for="red-clay_destiny">Clay of Destiny <span>~1,350,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-clay_destiny" data-price="1350000" data-name="Clay of Destiny" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=GYRO" alt="Three-Axis Gyroscope">
+                  <label for="red-three_axis_gyro">Three-Axis Gyroscope <span>~1,350,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-three_axis_gyro" data-price="1350000" data-name="Three-Axis Gyroscope" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=AMB" alt="Amber Heart">
+                  <label for="red-amber_heart">Amber Heart <span>~1,350,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-amber_heart" data-price="1350000" data-name="Amber Heart" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=ROB" alt="Quantum 2000 Computer">
+                  <label for="red-quantum_2000">Quantum 2000 <span>~1,350,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-quantum_2000" data-price="1350000" data-name="Quantum 2000" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=STAR" alt="Kamona Star Medal">
+                  <label for="red-kamona_star">Kamona Star Medal <span>~1,350,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-kamona_star" data-price="1350000" data-name="Kamona Star Medal" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=T008" alt="T-008 Relic">
+                  <label for="red-t008">T-008 Relic <span>~1,350,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-t008" data-price="1350000" data-name="T-008 Relic" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=VASE" alt="Porcelain Vase">
+                  <label for="red-vase">Porcelain Vase <span>~1,350,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-vase" data-price="1350000" data-name="Porcelain Vase" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=OPTO" alt="Optoelectronic Unit">
+                  <label for="red-optoelectronic">Optoelectronic Unit <span>~1,350,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-optoelectronic" data-price="1350000" data-name="Optoelectronic Unit" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=PEAC" alt="Peacock Fan">
+                  <label for="red-peacock_fan">Peacock Fan <span>~1,350,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-peacock_fan" data-price="1350000" data-name="Peacock Fan" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=DISC" alt="Voice of Civilization Disc">
+                  <label for="red-civ_voice">Voice of Civ. Disc <span>~1,350,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-civ_voice" data-price="1350000" data-name="Voice of Civ. Disc" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=LYRA" alt="Cultural Lyre">
+                  <label for="red-lyre">Cultural Lyre <span>~1,350,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-lyre" data-price="1350000" data-name="Cultural Lyre" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=EGG" alt="Hefra Egg">
+                  <label for="red-hefra_egg">Hefra Egg <span>~1,350,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-hefra_egg" data-price="1350000" data-name="Hefra Egg" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=TERM" alt="Thermal Imaging Module">
+                  <label for="red-thermal_module">Thermal Imaging Module <span>~1,300,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-thermal_module" data-price="1300000" data-name="Thermal Imaging Module" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=CUP" alt="Championship Trophy">
+                  <label for="red-champ_trophy">Championship Trophy <span>~950,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-champ_trophy" data-price="950000" data-name="Championship Trophy" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=PNT" alt="Wave Steed Statue">
+                  <label for="red-wave_steed">Wave Steed Statue <span>~850,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-wave_steed" data-price="850000" data-name="Wave Steed Statue" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=PENG" alt="Dark Zone Penguin">
+                  <label for="red-dz_penguin">Dark Zone Penguin <span>~800,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-dz_penguin" data-price="800000" data-name="Dark Zone Penguin" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=HELM" alt="Golden Helmet">
+                  <label for="red-golden_helmet">Golden Helmet <span>~800,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-golden_helmet" data-price="800000" data-name="Golden Helmet" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=CAR" alt="Caliburn Car Model">
+                  <label for="red-caliburn_model">Caliburn Car Model <span>~750,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-caliburn_model" data-price="750000" data-name="Caliburn Car Model" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=CHSS" alt="Luxury Chess Set">
+                  <label for="red-luxury_chess">Luxury Chess Set <span>~750,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-luxury_chess" data-price="750000" data-name="Luxury Chess Set" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=GOLD" alt="Spark Steed Statue">
+                  <label for="red-spark_steed">Spark Steed Statue <span>~750,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-spark_steed" data-price="750000" data-name="Spark Steed Statue" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=PASS" alt="Gold Command Board">
+                  <label for="red-gold_com_board">Gold Command Board <span>~650,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-gold_com_board" data-price="650000" data-name="Gold Command Board" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
+
+              <div class="red-item-row">
+                <div class="item-info-side">
+                  <img class="item-render-img" src="https://placehold.co/48x48/111722/ef4444?text=CASE" alt="Anniversary Gold Box">
+                  <label for="red-anniv_gold_box">Anniv. Gold Box <span>~350,000 K</span></label>
+                </div>
+                <input type="number" class="red-portfolio-input" id="red-anniv_gold_box" data-price="350000" data-name="Anniv. Gold Box" value="0" min="0" onchange="processarDashboardPerfil()">
+              </div>
             </div>
-            <button type="button" onclick="salvarApenasItensCofre()" style="background: var(--green-cash); color: #fff; margin-top: 15px; height: 48px; border-radius: 6px; font-weight: 800; font-size: 14px; letter-spacing: 0.5px;">SAVE PROFILE VAULT</button>
+
+            <button onclick="salvarApenasItensCofre()" style="background: var(--green-cash); color: #fff; margin-top: 15px; height: 48px; border-radius: 6px; font-weight: 800; font-size: 14px; letter-spacing: 0.5px;">SAVE PROFILE VAULT</button>
           </div>
         </div>
 
@@ -474,7 +752,6 @@
       isLoginMode = !isLoginMode;
       document.getElementById('auth-title').innerText = isLoginMode ? 'Sign In to Tracker' : 'Create Operator Account';
       document.getElementById('btn-auth').innerText = isLoginMode ? 'Sign In' : 'Sign Up';
-      document.getElementById('btn-toggle-mode').innerText = isLoginMode ? "Don't have an account? Sign Up Here" : "Already have an account? Sign In Here";
     }
 
     function toggleProfileConfigPanel() {
@@ -500,10 +777,6 @@
       const password = document.getElementById('auth-password').value;
       const rota = isLoginMode ? '/auth/login' : '/auth/register';
 
-      if (!email || !password) {
-        return alert('Please fill in all layout authentication fields.');
-      }
-
       try {
         const res = await fetch(`${API_URL}${rota}`, {
           method: 'POST',
@@ -518,11 +791,10 @@
           token = data.token;
           mostrarDashboard();
         } else {
-          // Aqui interceptamos a criação de conta com a mensagem do e-mail de confirmação!
-          alert(`Account created successfully!\n\nA verification confirmation link has been dispatched to: ${email}. Please confirm it before logging in.`);
+          alert('Account created successfully!');
           toggleAuthMode();
         }
-      } catch (err) { alert('Failed to connect to the server environment.'); }
+      } catch (err) { alert('Failed to connect to the server.'); }
     }
 
     function mostrarDashboard() {
@@ -644,7 +916,8 @@
             data: dados,
             backgroundColor: [
               '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', 
-              '#ec4899', '#14b8a6', '#f43f5e', '#06b6d4', '#10b981'
+              '#ec4899', '#14b8a6', '#f43f5e', '#06b6d4', '#10b981',
+              '#6366f1', '#a855f7', '#d946ef', '#f97316', '#84cc16'
             ],
             borderWidth: 1,
             borderColor: '#111722'
@@ -688,7 +961,41 @@
           replica_mask: Math.max(0, parseInt(document.getElementById('red-replica_mask').value) || 0),
           alvorada_frame: Math.max(0, parseInt(document.getElementById('red-alvorada_frame').value) || 0),
           capsule_tv: Math.max(0, parseInt(document.getElementById('red-capsule_tv').value) || 0),
-          music_box: Math.max(0, parseInt(document.getElementById('red-music_box').value) || 0)
+          music_box: Math.max(0, parseInt(document.getElementById('red-music_box').value) || 0),
+          aerospace_navigator: Math.max(0, parseInt(document.getElementById('red-aerospace_navigator').value) || 0),
+          majestic_sculpture: Math.max(0, parseInt(document.getElementById('red-majestic_sculpture').value) || 0),
+          cls_satellite: Math.max(0, parseInt(document.getElementById('red-cls_satellite').value) || 0),
+          faeton: Math.max(0, parseInt(document.getElementById('red-faeton').value) || 0),
+          eeg: Math.max(0, parseInt(document.getElementById('red-eeg').value) || 0),
+          prototype: Math.max(0, parseInt(document.getElementById('red-prototype').value) || 0),
+          matriz_verdad: Math.max(0, parseInt(document.getElementById('red-matriz_verdad').value) || 0),
+          chaotic_matter: Math.max(0, parseInt(document.getElementById('red-chaotic_matter').value) || 0),
+          target_module: Math.max(0, parseInt(document.getElementById('red-target_module').value) || 0),
+          gem_necklace: Math.max(0, parseInt(document.getElementById('red-gem_necklace').value) || 0),
+          gold_snake: Math.max(0, parseInt(document.getElementById('red-gold_snake').value) || 0),
+          antique_teapot: Math.max(0, parseInt(document.getElementById('red-antique_teapot').value) || 0),
+          clay_destiny: Math.max(0, parseInt(document.getElementById('red-clay_destiny').value) || 0),
+          three_axis_gyro: Math.max(0, parseInt(document.getElementById('red-three_axis_gyro').value) || 0),
+          amber_heart: Math.max(0, parseInt(document.getElementById('red-amber_heart').value) || 0),
+          quantum_2000: Math.max(0, parseInt(document.getElementById('red-quantum_2000').value) || 0),
+          kamona_star: Math.max(0, parseInt(document.getElementById('red-kamona_star').value) || 0),
+          t008: Math.max(0, parseInt(document.getElementById('red-t008').value) || 0),
+          vase: Math.max(0, parseInt(document.getElementById('red-vase').value) || 0),
+          optoelectronic: Math.max(0, parseInt(document.getElementById('red-optoelectronic').value) || 0),
+          peacock_fan: Math.max(0, parseInt(document.getElementById('red-peacock_fan').value) || 0),
+          civ_voice: Math.max(0, parseInt(document.getElementById('red-civ_voice').value) || 0),
+          lyre: Math.max(0, parseInt(document.getElementById('red-lyre').value) || 0),
+          hefra_egg: Math.max(0, parseInt(document.getElementById('red-hefra_egg').value) || 0),
+          thermal_module: Math.max(0, parseInt(document.getElementById('red-thermal_module').value) || 0),
+          champ_trophy: Math.max(0, parseInt(document.getElementById('red-champ_trophy').value) || 0),
+          wave_steed: Math.max(0, parseInt(document.getElementById('red-wave_steed').value) || 0),
+          dz_penguin: Math.max(0, parseInt(document.getElementById('red-dz_penguin').value) || 0),
+          golden_helmet: Math.max(0, parseInt(document.getElementById('red-golden_helmet').value) || 0),
+          caliburn_model: Math.max(0, parseInt(document.getElementById('red-caliburn_model').value) || 0),
+          luxury_chess: Math.max(0, parseInt(document.getElementById('red-luxury_chess').value) || 0),
+          spark_steed: Math.max(0, parseInt(document.getElementById('red-spark_steed').value) || 0),
+          gold_com_board: Math.max(0, parseInt(document.getElementById('red-gold_com_board').value) || 0),
+          anniv_gold_box: Math.max(0, parseInt(document.getElementById('red-anniv_gold_box').value) || 0)
         }
       };
 
@@ -825,7 +1132,7 @@
                 ${margemPartida >= 0 ? '+' : ''}${margemPartida}%
               </td>
               <td>
-                <button type="button" class="btn-delete" onclick="deletarRaid('${raid._id}')" title="Delete Entry">🗑️</button>
+                <button class="btn-delete" onclick="deletarRaid('${raid._id}')" title="Delete Entry">🗑️</button>
               </td>
             </tr>
           `;
