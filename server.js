@@ -107,15 +107,10 @@ const UserSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-UserSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (err) {
-    next(err);
-  }
+UserSchema.pre('save', async function() {
+  if (!this.isModified('password')) return;
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
 });
 
 const User = mongoose.model('User', UserSchema);
@@ -132,14 +127,14 @@ const RaidSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now }
 });
 
-RaidSchema.pre('save', function(next) {
+// CORREÇÃO AQUI: Tratamento síncrono nativo do Mongoose sem o callback 'next' bugando a execução
+RaidSchema.pre('save', function() {
   if (this.status === 'Survived') {
     this.netProfit = Number(this.extractedValue || 0) - Number(this.loadoutValue || 0);
   } else {
     this.netProfit = -Number(this.loadoutValue || 0);
     this.extractedValue = 0; 
   }
-  next();
 });
 
 const Raid = mongoose.model('Raid', RaidSchema);
@@ -315,7 +310,6 @@ app.get('/api/stats', autenticarToken, async (req, res) => {
       }
     }
 
-    // Convertendo explicitamente a string do ID para o tipo ObjectId do Mongoose (evita quebra no aggregate)
     const stats = await Raid.aggregate([
       { $match: { userId: new mongoose.Types.ObjectId(String(req.userId)) } },
       { $group: {
