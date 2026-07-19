@@ -70,7 +70,7 @@ const UserSchema = new mongoose.Schema({
     secret_document: { type: Number, default: 0 },
     utopia: { type: Number, default: 0 },
     replica_mask: { type: Number, default: 0 },
-    alvorada_frame: { type: Number, default: 0 }, // Sincronizado com o front
+    alvorada_frame: { type: Number, default: 0 },
     capsule_tv: { type: Number, default: 0 },
     music_box: { type: Number, default: 0 },
     aerospace_navigator: { type: Number, default: 0 },
@@ -110,10 +110,15 @@ const UserSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-UserSchema.pre('save', async function() {
-  if (!this.isModified('password')) return;
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
+UserSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) return next();
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (err) {
+    next(err);
+  }
 });
 
 const User = mongoose.model('User', UserSchema);
@@ -130,13 +135,14 @@ const RaidSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now }
 });
 
-RaidSchema.pre('save', function() {
+RaidSchema.pre('save', function(next) {
   if (this.status === 'Survived') {
     this.netProfit = this.extractedValue - this.loadoutValue;
   } else {
     this.netProfit = -this.loadoutValue;
     this.extractedValue = 0; 
   }
+  next();
 });
 
 const Raid = mongoose.model('Raid', RaidSchema);
@@ -176,7 +182,7 @@ async function verificarStatusDasStreams() {
       const nickTwitch = extrairUsername(usuario.twitchChannel, 'twitch');
       const nickKick = extrairUsername(usuario.kickChannel, 'kick');
 
-      // CORREÇÃO: Twitch via decodificação de JSON interno estruturado para evitar bloqueios simples de string
+      // Twitch Scraper via Node Fetch
       if (nickTwitch) {
         try {
           const res = await fetch(`https://www.twitch.tv/${nickTwitch}`, { 
@@ -194,6 +200,7 @@ async function verificarStatusDasStreams() {
         }
       }
 
+      // Kick API check
       if (!transmitindoAgora && nickKick) {
         try {
           const res = await fetch(`https://kick.com/api/v1/channels/${nickKick}`);
@@ -221,6 +228,7 @@ async function verificarStatusDasStreams() {
   }
 }
 
+// Ciclo de verificação a cada 3 minutos
 setInterval(verificarStatusDasStreams, 3 * 60 * 1000);
 setTimeout(verificarStatusDasStreams, 10000);
 
@@ -304,7 +312,6 @@ app.get('/api/user/profile', autenticarToken, async (req, res) => {
   }
 });
 
-// CORREÇÃO: PUT ajustado para fazer merges parciais sem destruir subdocumentos caso o front não os envie
 app.put('/api/user/profile', autenticarToken, async (req, res) => {
   try {
     const { username, avatarUrl, twitchChannel, kickChannel, gameSettings, hardwareSpecs, redItems } = req.body;
@@ -315,7 +322,6 @@ app.put('/api/user/profile', autenticarToken, async (req, res) => {
     if (twitchChannel !== undefined) updateFields.twitchChannel = twitchChannel;
     if (kickChannel !== undefined) updateFields.kickChannel = kickChannel;
 
-    // Constrói caminhos com notação de ponto para evitar destruir as subpropriedades padrão do Schema
     if (gameSettings) {
       for (const [key, value] of Object.entries(gameSettings)) {
         updateFields[`gameSettings.${key}`] = value;
@@ -338,6 +344,7 @@ app.put('/api/user/profile', autenticarToken, async (req, res) => {
       { new: true, runValidators: true }
     );
 
+    // Dispara uma verificação imediata após o usuário salvar novas redes sociais
     setTimeout(verificarStatusDasStreams, 1000);
 
     return res.json({ message: 'Dashboard config synchronized!', user: updatedUser });
@@ -346,7 +353,8 @@ app.put('/api/user/profile', autenticarToken, async (req, res) => {
   }
 });
 
-app.get('/api/streams/live', autenticarToken, async (req, res) => {
+// MODIFICADO: Rota pública para o feed principal não quebrar se o visitante não estiver logado
+app.get('/api/streams/live', async (req, res) => {
   try {
     const liveOperators = await User.find({ isLive: true })
       .select('username avatarUrl twitchChannel kickChannel livePlatform');
