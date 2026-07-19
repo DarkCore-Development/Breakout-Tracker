@@ -134,9 +134,9 @@ const RaidSchema = new mongoose.Schema({
 
 RaidSchema.pre('save', function(next) {
   if (this.status === 'Survived') {
-    this.netProfit = this.extractedValue - this.loadoutValue;
+    this.netProfit = Number(this.extractedValue || 0) - Number(this.loadoutValue || 0);
   } else {
-    this.netProfit = -this.loadoutValue;
+    this.netProfit = -Number(this.loadoutValue || 0);
     this.extractedValue = 0; 
   }
   next();
@@ -187,7 +187,6 @@ app.post('/api/auth/register', async (req, res) => {
         </div>`
     };
 
-    // Dispara o e-mail em background sem travar a resposta para o usuário
     transporter.sendMail(mailOptions, (mailErr) => {
       if (mailErr) console.error("Email delivery failed:", mailErr.message);
     });
@@ -245,7 +244,7 @@ app.put('/api/user/profile', autenticarToken, async (req, res) => {
     }
     if (redItems) {
       for (const [key, value] of Object.entries(redItems)) {
-        updateFields[`redItems.${key}`] = value;
+        updateFields[`redItems.${key}`] = Number(value);
       }
     }
     
@@ -269,7 +268,13 @@ app.post('/api/raids', autenticarToken, async (req, res) => {
   try {
     const { mapName, gameMode, status, loadoutValue, extractedValue, redItemsCount } = req.body;
     const novaRaid = await Raid.create({
-      userId: req.userId, mapName, gameMode, status, loadoutValue, extractedValue, redItemsCount
+      userId: req.userId, 
+      mapName, 
+      gameMode, 
+      status, 
+      loadoutValue: Number(loadoutValue || 0), 
+      extractedValue: Number(extractedValue || 0), 
+      redItemsCount: Number(redItemsCount || 0)
     });
     return res.status(201).json({ message: 'Raid synchronized successfully!', raid: novaRaid });
   } catch (error) {
@@ -310,9 +315,9 @@ app.get('/api/stats', autenticarToken, async (req, res) => {
       }
     }
 
-    // Correção essencial: usando instanciamento correto do ObjectId
+    // Convertendo explicitamente a string do ID para o tipo ObjectId do Mongoose (evita quebra no aggregate)
     const stats = await Raid.aggregate([
-      { $match: { userId: new mongoose.Types.ObjectId(req.userId) } },
+      { $match: { userId: new mongoose.Types.ObjectId(String(req.userId)) } },
       { $group: {
           _id: null,
           totalRaids: { $sum: 1 },
@@ -349,7 +354,7 @@ mongoose.connect(MONGO_URI)
   })
   .catch(err => {
     console.error('❌ Database connection error:', err);
-    process.exit(1); // Encerra o processo caso falhe ao iniciar a conexão primária
+    process.exit(1);
   });
 
 module.exports = app;
