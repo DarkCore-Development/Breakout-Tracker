@@ -18,9 +18,15 @@ app.use(cors());
 const MONGO_URI = process.env.MONGO_URI;
 if (!MONGO_URI) {
   console.error("❌ ERRO CRÍTICO: A variável de ambiente MONGO_URI não foi definida!");
+  process.exit(1); // Encerra a aplicação se não houver banco configurado
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'darkcore_secret_key_siege_123';
+// EVITE fallback hardcoded em produção para chaves secretas
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.warn("⚠️ AVISO: JWT_SECRET não definida. Usando chave de fallback para desenvolvimento.");
+}
+const SEGREDO_JWT = JWT_SECRET || 'darkcore_secret_key_siege_123';
 
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST || "smtp.mailtrap.io",
@@ -148,7 +154,7 @@ RaidSchema.pre('save', function(next) {
 const Raid = mongoose.model('Raid', RaidSchema);
 
 // ==========================================
-// FUNÇÕES AUXILIARES DE VALIDAÇÃO DE LIVE REAL
+// FUNÇÕES AUXILIARES DE VALIDAÇÃO DE LIVE REAL (CORRIGIDO)
 // ==========================================
 
 function extrairUsername(canalUrl, plataforma) {
@@ -175,35 +181,52 @@ async function verificarStatusDasStreams() {
       ]
     });
 
-    for (let usuario of usuariosComCanais) {
+    // Controla o tempo de requisição para evitar travamento do Event Loop
+    const fetchWithTimeout = (url, options, timeout = 4000) => {
+      return Promise.race([
+        fetch(url, options),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout na plataforma')), timeout))
+      ]);
+    };
+
+    // Criamos o array de promessas paralelas usando .map() em vez de for-of com await
+    const promessas = usuariosComCanais.map(async (usuario) => {
       let transmitindoAgora = false;
       let plataformaAtiva = '';
 
       const nickTwitch = extrairUsername(usuario.twitchChannel, 'twitch');
       const nickKick = extrairUsername(usuario.kickChannel, 'kick');
 
-      // Twitch Scraper via Node Fetch
+      // 1. CHECAGEM DA TWITCH
       if (nickTwitch) {
         try {
-          const res = await fetch(`https://www.twitch.tv/${nickTwitch}`, { 
-            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' } 
+          const res = await fetchWithTimeout(`https://www.twitch.tv/${nickTwitch}`, { 
+            headers: { 
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+              'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8'
+            } 
           });
           if (res.ok) {
             const html = await res.text();
-            if (html.includes('"isLiveBroadcast":true') || html.includes('isLive') || html.includes('live_user_')) {
+            if (html.includes('"isLiveBroadcast":true') || html.includes('isLive') || html.includes(`"stream":{"id"`)) {
               transmitindoAgora = true;
               plataformaAtiva = 'twitch';
             }
           }
         } catch (e) {
-          console.error(`Erro ao checar Twitch do usuário ${nickTwitch}:`, e.message);
+          console.warn(`[Twitch Sync] Não foi possível verificar ${nickTwitch}: ${e.message}`);
         }
       }
 
-      // Kick API check
+      // 2. CHECAGEM DA KICK (Só roda se não estiver ativo na Twitch)
       if (!transmitindoAgora && nickKick) {
         try {
-          const res = await fetch(`https://kick.com/api/v1/channels/${nickKick}`);
+          const res = await fetchWithTimeout(`https://kick.com/api/v1/channels/${nickKick}`, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+              'Accept': 'application/json'
+            }
+          });
           if (res.ok) {
             const dados = await res.json();
             if (dados.livestream && dados.livestream.is_live) {
@@ -212,23 +235,28 @@ async function verificarStatusDasStreams() {
             }
           }
         } catch (e) {
-          console.error(`Erro ao checar Kick do usuário ${nickKick}:`, e.message);
+          console.warn(`[Kick Sync] Não foi possível verificar ${nickKick}: ${e.message}`);
         }
       }
 
+      // Evita chamadas e escritas desnecessárias se o status continuar igual
       if (usuario.isLive !== transmitindoAgora || usuario.livePlatform !== plataformaAtiva) {
         await User.findByIdAndUpdate(usuario._id, { 
           isLive: transmitindoAgora, 
           livePlatform: plataformaAtiva 
         });
       }
-    }
+    });
+
+    // Executa e resolve todas as checagens simultaneamente no cluster
+    await Promise.allSettled(promessas);
+
   } catch (err) {
-    console.error("Falha no ciclo de verificação de transmissões:", err);
+    console.error("Falha geral no ciclo de sincronização de lives:", err);
   }
 }
 
-// Ciclo de verificação a cada 3 minutos
+// Ciclo de varredura automatizado (Executa a cada 3 minutos, e roda uma vez 10s após ligar)
 setInterval(verificarStatusDasStreams, 3 * 60 * 1000);
 setTimeout(verificarStatusDasStreams, 10000);
 
@@ -241,7 +269,7 @@ const autenticarToken = (req, res, next) => {
 
   if (!token) return res.status(401).json({ error: 'Access denied. Token missing.' });
 
-  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+  jwt.verify(token, SEGREDO_JWT, (err, decoded) => {
     if (err) return res.status(403).json({ error: 'Invalid or expired token.' });
     req.userId = decoded.id;
     next();
@@ -295,7 +323,7 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ error: 'Invalid authentication credentials.' });
     }
     
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '1d' });
+    const token = jwt.sign({ id: user._id }, SEGREDO_JWT, { expiresIn: '1d' });
     return res.json({ message: 'Authentication successful!', token });
   } catch (error) {
     return res.status(500).json({ error: `Internal server error during login: ${error.message}` });
@@ -344,7 +372,7 @@ app.put('/api/user/profile', autenticarToken, async (req, res) => {
       { new: true, runValidators: true }
     );
 
-    // Dispara uma verificação imediata após o usuário salvar novas redes sociais
+    // Dispara checagem imediata um segundo após atualização de canal
     setTimeout(verificarStatusDasStreams, 1000);
 
     return res.json({ message: 'Dashboard config synchronized!', user: updatedUser });
@@ -353,7 +381,6 @@ app.put('/api/user/profile', autenticarToken, async (req, res) => {
   }
 });
 
-// MODIFICADO: Rota pública para o feed principal não quebrar se o visitante não estiver logado
 app.get('/api/streams/live', async (req, res) => {
   try {
     const liveOperators = await User.find({ isLive: true })
@@ -423,6 +450,7 @@ app.get('/api/stats', autenticarToken, async (req, res) => {
       }
     ]);
 
+    // Previne quebra caso o array retornado pelo aggregate seja vazio (usuário sem raids)
     const resultadoFinal = stats[0] || { totalRaids: 0, patrimonioLiquidoGeral: 0, totalExtraidoValue: 0 };
     return res.json({
       totalRaids: resultadoFinal.totalRaids,
