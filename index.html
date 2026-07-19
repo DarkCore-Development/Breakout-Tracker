@@ -152,12 +152,12 @@
             <div class="sub" id="stat-sr">0% Survival Rate</div>
           </div>
           <div class="card">
-            <h3>Special Loot (Raid Logs)</h3>
+            <h3>Special Loot (Total Reds)</h3>
             <div class="val red" id="stat-vermelhos">0</div>
-            <div class="sub">Red items found on recorded matches</div>
+            <div class="sub">Vault items + extracted loot</div>
           </div>
           <div class="card">
-            <h3>Net Worth (Raid Activity)</h3>
+            <h3>Net Worth (Total Balance)</h3>
             <div class="val cash" id="stat-patrimonio">0 Koen</div>
             <div class="sub" id="stat-lucro-porcento">Profitability: 0%</div>
           </div>
@@ -983,6 +983,7 @@
         });
         if (res.ok) {
           processarDashboardPerfil();
+          await carregarEstatisticas(); // Força a atualização do card principal de vermelhos na Tab 1 ao salvar o cofre
           alert('Vault and Profile successfully updated.');
         }
       } catch (err) { alert('Internal error syncing operator data profile.'); }
@@ -1000,7 +1001,8 @@
         document.getElementById('stat-raids').innerText = data.totalRaids || 0;
         document.getElementById('stat-patrimonio').innerText = `${(data.patrimonioLiquidoGeral || 0).toLocaleString('en-US')} Koen`;
         
-        document.getElementById('stat-vermelhos').innerText = 0; 
+        // CORREÇÃO: Consome a soma completa do backend (Fixo do Cofre + Extracões de Raids)
+        document.getElementById('stat-vermelhos').innerText = data.totalVermelhos || 0; 
       } catch (err) { console.error('Error fetching dashboard statistics'); }
     }
 
@@ -1012,7 +1014,6 @@
         
         if (!raids || raids.length === 0) {
           tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748b;">No records found.</td></tr>';
-          document.getElementById('stat-vermelhos').innerText = 0; 
           if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
           return;
         }
@@ -1020,7 +1021,6 @@
         let totalSurvived = 0;
         let totalCustoKits = 0;
         let totalLucroBruto = 0;
-        let totalVermelhosRaids = 0; 
         let historicoLucrosAcumulados = [];
         let labelsGrafico = [];
         let somaAcumulada = 0;
@@ -1030,13 +1030,10 @@
           if (raid.status === 'Survived') totalSurvived++;
           totalCustoKits += raid.loadoutValue;
           totalLucroBruto += raid.extractedValue;
-          totalVermelhosRaids += (raid.redItemsCount || 0); 
           somaAcumulada += raid.netProfit;
           historicoLucrosAcumulados.push(somaAcumulada);
           labelsGrafico.push(`Raid ${index + 1}`);
         });
-
-        document.getElementById('stat-vermelhos').innerText = totalVermelhosRaids;
 
         const srRate = raids.length > 0 ? ((totalSurvived / raids.length) * 100).toFixed(0) : 0;
         document.getElementById('stat-sr').innerText = `${srRate}% Survival Rate`;
@@ -1112,6 +1109,7 @@
     }
 
     async function enviarRaid() {
+      // CORREÇÃO: Puxa os valores usando a função de limpeza obterValorNumericoLimpo() para remover as vírgulas da máscara
       const loadoutPuro = obterValorNumericoLimpo('raid-loadout');
       const extractedPuro = obterValorNumericoLimpo('raid-extracted');
       const totalRedsCount = Math.max(0, parseInt(document.getElementById('raid-red-count').value) || 0);
@@ -1138,6 +1136,9 @@
           document.getElementById('raid-red-count').value = "0";
           document.getElementById('campos-sucesso').style.display = 'block';
           await renderizarPainelCompleto();
+        } else {
+          const errData = await res.json();
+          alert(`Server rejection: ${errData.error}`);
         }
       } catch (err) { alert('Error saving raid entry.'); }
     }
