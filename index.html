@@ -864,7 +864,7 @@
       let tabelaHtml = '';
 
       inputs.forEach(input => {
-        const qtd = Number(input.value) || 0;
+        const qtd = Math.max(0, parseInt(input.value) || 0);
         const preco = Number(input.getAttribute('data-price')) || 0;
         const nome = input.getAttribute('data-name') || 'Item';
 
@@ -954,48 +954,48 @@
           os: document.getElementById('prof-os').value
         },
         redItems: {
-          gold_lion: Number(document.getElementById('red-gold_lion').value) || 0,
-          km903_jet: Number(document.getElementById('red-km903_jet').value) || 0,
-          secret_document: Number(document.getElementById('red-secret_document').value) || 0,
-          utopia: Number(document.getElementById('red-utopia').value) || 0,
-          replica_mask: Number(document.getElementById('red-replica_mask').value) || 0,
-          alvorada_frame: Number(document.getElementById('red-alvorada_frame').value) || 0,
-          capsule_tv: Number(document.getElementById('red-capsule_tv').value) || 0,
-          music_box: Number(document.getElementById('red-music_box').value) || 0,
-          aerospace_navigator: Number(document.getElementById('red-aerospace_navigator').value) || 0,
-          majestic_sculpture: Number(document.getElementById('red-majestic_sculpture').value) || 0,
-          cls_satellite: Number(document.getElementById('red-cls_satellite').value) || 0,
-          faeton: Number(document.getElementById('red-faeton').value) || 0,
-          eeg: Number(document.getElementById('red-eeg').value) || 0,
-          prototype: Number(document.getElementById('red-prototype').value) || 0,
-          matriz_verdad: Number(document.getElementById('red-matriz_verdad').value) || 0,
-          chaotic_matter: Number(document.getElementById('red-chaotic_matter').value) || 0,
-          target_module: Number(document.getElementById('red-target_module').value) || 0,
-          gem_necklace: Number(document.getElementById('red-gem_necklace').value) || 0,
-          gold_snake: Number(document.getElementById('red-gold_snake').value) || 0,
-          antique_teapot: Number(document.getElementById('red-antique_teapot').value) || 0,
-          clay_destiny: Number(document.getElementById('red-clay_destiny').value) || 0,
-          three_axis_gyro: Number(document.getElementById('red-three_axis_gyro').value) || 0,
-          amber_heart: Number(document.getElementById('red-amber_heart').value) || 0,
-          quantum_2000: Number(document.getElementById('red-quantum_2000').value) || 0,
-          kamona_star: Number(document.getElementById('red-kamona_star').value) || 0,
-          t008: Number(document.getElementById('red-t008').value) || 0,
-          vase: Number(document.getElementById('red-vase').value) || 0,
-          optoelectronic: Number(document.getElementById('red-optoelectronic').value) || 0,
-          peacock_fan: Number(document.getElementById('red-peacock_fan').value) || 0,
-          civ_voice: Number(document.getElementById('red-civ_voice').value) || 0,
-          lyre: Number(document.getElementById('red-lyre').value) || 0,
-          hefra_egg: Number(document.getElementById('red-hefra_egg').value) || 0,
-          thermal_module: Number(document.getElementById('red-thermal_module').value) || 0,
-          champ_trophy: Number(document.getElementById('red-champ_trophy').value) || 0,
-          wave_steed: Number(document.getElementById('red-wave_steed').value) || 0,
-          dz_penguin: Number(document.getElementById('red-dz_penguin').value) || 0,
-          golden_helmet: Number(document.getElementById('red-golden_helmet').value) || 0,
-          caliburn_model: Number(document.getElementById('red-caliburn_model').value) || 0,
-          luxury_chess: Number(document.getElementById('red-luxury_chess').value) || 0,
-          spark_steed: Number(document.getElementById('red-spark_steed').value) || 0,
-          gold_com_board: Number(document.getElementById('red-gold_com_board').value) || 0,
-          anniv_gold_box: Number(document.getElementById('red-anniv_gold_box').value) || 0
+          gold_lion: Math.max(0, parseInt(document.getElementById('red-gold_lion').value) || 0),
+          km903_jet: Math.max(0, parseInt(document.getElementById('red-km903_jet').value) || 0),
+          secret_document: Math.max(0, parseInt(document.getElementById('red-secret_document').value) || 0),
+          utopia: Math.max(0, parseInt(document.getElementById('red-utopia').value) || 0),
+          replica_mask: Math.max(0, parseInt(document.getElementById('red-replica_mask').value) || 0),
+          alvorada_frame: Math.max(0, parseInt(document.getElementById('red-alvorada_frame').value) || 0),
+          capsule_tv: Math.max(0, parseInt(document.getElementById('red-capsule_tv').value) || 0),
+          music_box: Math.max(0, parseInt(document.getElementById('red-music_box').value) || 0),
+          aerospace_navigator: Math.max(0, parseInt(document.getElementById('red-aerospace_navigator').value) || 0),
+          majestic_sculpture: Math.max(0, parseInt(document.getElementById('red-majestic_sculpture').value) || 0),
+          cls_satellite: Math.max(0, parseInt(document.getElementById('red-cls_satellite').value) || 0),
+          faeton: Math.max(0, parseInt(document.getElementById('red-faeton').value) || 0),
+          eeg: Math.max(0, parseInt(document.getElementById('red-eeg').value) || 0),
+          prototype: Math.max(0, parseInt(document.getElementById('red-prototype').value) || 0),
+          matriz_verdad: Math.max(0, parseInt(document.getElementById('red-matriz_verdad').value) || 0),
+          chaotic_matter: Math.max(0, parseInt(document.getElementById('red-chaotic_matter').value) || 0),
+          target_module: Math.max(0, parseInt(document.getElementById('red-target_module').value) || 0),
+          gem_necklace: Math.max(0, parseInt(document.getElementById('red-gem_necklace').value) || 0),
+          gold_snake: Math.max(0, parseInt(document.getElementById('red-gold_snake').value) || 0),
+          antique_teapot: Math.max(0, parseInt(document.getElementById('red-antique_teapot').value) || 0),
+          clay_destiny: Math.max(0, parseInt(document.getElementById('red-clay_destiny').value) || 0),
+          three_axis_gyro: Math.max(0, parseInt(document.getElementById('red-three_axis_gyro').value) || 0),
+          amber_heart: Math.max(0, parseInt(document.getElementById('red-amber_heart').value) || 0),
+          quantum_2000: Math.max(0, parseInt(document.getElementById('red-quantum_2000').value) || 0),
+          kamona_star: Math.max(0, parseInt(document.getElementById('red-kamona_star').value) || 0),
+          t008: Math.max(0, parseInt(document.getElementById('red-t008').value) || 0),
+          vase: Math.max(0, parseInt(document.getElementById('red-vase').value) || 0),
+          optoelectronic: Math.max(0, parseInt(document.getElementById('red-optoelectronic').value) || 0),
+          peacock_fan: Math.max(0, parseInt(document.getElementById('red-peacock_fan').value) || 0),
+          civ_voice: Math.max(0, parseInt(document.getElementById('red-civ_voice').value) || 0),
+          lyre: Math.max(0, parseInt(document.getElementById('red-lyre').value) || 0),
+          hefra_egg: Math.max(0, parseInt(document.getElementById('red-hefra_egg').value) || 0),
+          thermal_module: Math.max(0, parseInt(document.getElementById('red-thermal_module').value) || 0),
+          champ_trophy: Math.max(0, parseInt(document.getElementById('red-champ_trophy').value) || 0),
+          wave_steed: Math.max(0, parseInt(document.getElementById('red-wave_steed').value) || 0),
+          dz_penguin: Math.max(0, parseInt(document.getElementById('red-dz_penguin').value) || 0),
+          golden_helmet: Math.max(0, parseInt(document.getElementById('red-golden_helmet').value) || 0),
+          caliburn_model: Math.max(0, parseInt(document.getElementById('red-caliburn_model').value) || 0),
+          luxury_chess: Math.max(0, parseInt(document.getElementById('red-luxury_chess').value) || 0),
+          spark_steed: Math.max(0, parseInt(document.getElementById('red-spark_steed').value) || 0),
+          gold_com_board: Math.max(0, parseInt(document.getElementById('red-gold_com_board').value) || 0),
+          anniv_gold_box: Math.max(0, parseInt(document.getElementById('red-anniv_gold_box').value) || 0)
         }
       };
 
@@ -1175,7 +1175,7 @@
     async function enviarRaid() {
       const loadoutPuro = Number(document.getElementById('raid-loadout').value.replace(/,/g, '')) || 0;
       const extractedPuro = Number(document.getElementById('raid-extracted').value.replace(/,/g, '')) || 0;
-      const totalRedsCount = Number(document.getElementById('raid-red-count').value) || 0;
+      const totalRedsCount = Math.max(0, parseInt(document.getElementById('raid-red-count').value) || 0);
 
       const bodyData = {
         mapName: document.getElementById('raid-map').value,
