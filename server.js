@@ -8,11 +8,11 @@ require('dotenv').config();
 
 const app = express();
 
-// Aumenta o limite do body-parser para aceitar uploads em Base64 sem estourar o limite do Express
+// Aumenta o limite para aceitar uploads em Base64
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true, parameterLimit: 50000 }));
 
-// Permite conexões de qualquer origem
+// Habilita CORS para o frontend
 app.use(cors()); 
 
 const MONGO_URI = process.env.MONGO_URI;
@@ -21,12 +21,7 @@ if (!MONGO_URI) {
   process.exit(1); 
 }
 
-// EVITE fallback hardcoded em produção para chaves secretas
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  console.warn("⚠️ AVISO: JWT_SECRET não definida. Usando chave de fallback para desenvolvimento.");
-}
-const SEGREDO_JWT = JWT_SECRET || 'darkcore_secret_key_siege_123';
+const JWT_SECRET = process.env.JWT_SECRET || 'darkcore_secret_key_siege_123';
 
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST || "smtp.mailtrap.io",
@@ -38,7 +33,7 @@ const transporter = nodemailer.createTransport({
 });
 
 // ==========================================
-// 1. MODELAGEM DE DADOS (SCHEMAS)
+// 1. SCHEMAS DO MONGOOSE
 // ==========================================
 
 const UserSchema = new mongoose.Schema({
@@ -62,62 +57,58 @@ const UserSchema = new mongoose.Schema({
     os: { type: String, default: 'ZenithOS' } 
   },
   redItems: {
-  gold_lion: { type: Number, default: 0 },
-  km903_jet: { type: Number, default: 0 },
-  secret_document: { type: Number, default: 0 },
-  utopia: { type: Number, default: 0 },
-  replica_mask: { type: Number, default: 0 },
-  alvorada_frame: { type: Number, default: 0 },
-  capsule_tv: { type: Number, default: 0 },
-  music_box: { type: Number, default: 0 },
-  aerospace_navigator: { type: Number, default: 0 },
-  majestic_sculpture: { type: Number, default: 0 },
-  cls_satellite: { type: Number, default: 0 },
-  faeton: { type: Number, default: 0 },
-  eeg: { type: Number, default: 0 },
-  prototype: { type: Number, default: 0 },
-  matriz_verdad: { type: Number, default: 0 },
-  chaotic_matter: { type: Number, default: 0 },
-  target_module: { type: Number, default: 0 },
-  gem_necklace: { type: Number, default: 0 },
-  gold_snake: { type: Number, default: 0 },
-  antique_teapot: { type: Number, default: 0 },
-  clay_destiny: { type: Number, default: 0 },
-  three_axis_gyro: { type: Number, default: 0 },
-  amber_heart: { type: Number, default: 0 },
-  quantum_2000: { type: Number, default: 0 },
-  kamona_star: { type: Number, default: 0 },
-  t008: { type: Number, default: 0 },
-  vase: { type: Number, default: 0 },
-  optoelectronic: { type: Number, default: 0 },
-  peacock_fan: { type: Number, default: 0 },
-  civ_voice: { type: Number, default: 0 },
-  lyre: { type: Number, default: 0 },
-  hefra_egg: { type: Number, default: 0 },
-  thermal_module: { type: Number, default: 0 },
-  champ_trophy: { type: Number, default: 0 },
-  wave_steed: { type: Number, default: 0 },
-  dz_penguin: { type: Number, default: 0 },
-  golden_helmet: { type: Number, default: 0 },
-  caliburn_model: { type: Number, default: 0 },
-  luxury_chess: { type: Number, default: 0 },
-  spark_steed: { type: Number, default: 0 },
-  gold_com_board: { type: Number, default: 0 },
-  anniv_gold_box: { type: Number, default: 0 },
-  egg_rally: { type: Number, default: 0 },
-  glory_crown: { type: Number, default: 0 }
-}
+    gold_lion: { type: Number, default: 0 },
+    km903_jet: { type: Number, default: 0 },
+    secret_document: { type: Number, default: 0 },
+    utopia: { type: Number, default: 0 },
+    replica_mask: { type: Number, default: 0 },
+    alvorada_frame: { type: Number, default: 0 },
+    capsule_tv: { type: Number, default: 0 },
+    music_box: { type: Number, default: 0 },
+    aerospace_navigator: { type: Number, default: 0 },
+    majestic_sculpture: { type: Number, default: 0 },
+    cls_satellite: { type: Number, default: 0 },
+    faeton: { type: Number, default: 0 },
+    eeg: { type: Number, default: 0 },
+    prototype: { type: Number, default: 0 },
+    matriz_verdad: { type: Number, default: 0 },
+    chaotic_matter: { type: Number, default: 0 },
+    target_module: { type: Number, default: 0 },
+    gem_necklace: { type: Number, default: 0 },
+    gold_snake: { type: Number, default: 0 },
+    antique_teapot: { type: Number, default: 0 },
+    clay_destiny: { type: Number, default: 0 },
+    three_axis_gyro: { type: Number, default: 0 },
+    amber_heart: { type: Number, default: 0 },
+    quantum_2000: { type: Number, default: 0 },
+    kamona_star: { type: Number, default: 0 },
+    t008: { type: Number, default: 0 },
+    vase: { type: Number, default: 0 },
+    optoelectronic: { type: Number, default: 0 },
+    peacock_fan: { type: Number, default: 0 },
+    civ_voice: { type: Number, default: 0 },
+    lyre: { type: Number, default: 0 },
+    hefra_egg: { type: Number, default: 0 },
+    thermal_module: { type: Number, default: 0 },
+    champ_trophy: { type: Number, default: 0 },
+    wave_steed: { type: Number, default: 0 },
+    dz_penguin: { type: Number, default: 0 },
+    golden_helmet: { type: Number, default: 0 },
+    caliburn_model: { type: Number, default: 0 },
+    luxury_chess: { type: Number, default: 0 },
+    spark_steed: { type: Number, default: 0 },
+    gold_com_board: { type: Number, default: 0 },
+    anniv_gold_box: { type: Number, default: 0 },
+    egg_rally: { type: Number, default: 0 },
+    glory_crown: { type: Number, default: 0 }
+  }
 }, { timestamps: true });
 
-UserSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (err) {
-    next(err);
-  }
+// Hash da senha seguro para async/await
+UserSchema.pre('save', async function() {
+  if (!this.isModified('password')) return;
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
 });
 
 const User = mongoose.model('User', UserSchema);
@@ -134,14 +125,13 @@ const RaidSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now }
 });
 
-RaidSchema.pre('save', function(next) {
+RaidSchema.pre('save', function() {
   if (this.status === 'Survived') {
     this.netProfit = Number(this.extractedValue || 0) - Number(this.loadoutValue || 0);
   } else {
     this.netProfit = -Number(this.loadoutValue || 0);
     this.extractedValue = 0; 
   }
-  next();
 });
 
 const Raid = mongoose.model('Raid', RaidSchema);
@@ -155,7 +145,7 @@ const autenticarToken = (req, res, next) => {
 
   if (!token) return res.status(401).json({ error: 'Access denied. Token missing.' });
 
-  jwt.verify(token, SEGREDO_JWT, (err, decoded) => {
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
     if (err) return res.status(403).json({ error: 'Invalid or expired token.' });
     req.userId = decoded.id;
     next();
@@ -209,7 +199,7 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ error: 'Invalid authentication credentials.' });
     }
     
-    const token = jwt.sign({ id: user._id }, SEGREDO_JWT, { expiresIn: '1d' });
+    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '7d' });
     return res.json({ message: 'Authentication successful!', token });
   } catch (error) {
     return res.status(500).json({ error: `Internal server error during login: ${error.message}` });
@@ -317,7 +307,6 @@ app.get('/api/stats', autenticarToken, async (req, res) => {
       }
     }
 
-    // Convertendo explicitamente a string do ID para o tipo ObjectId do Mongoose (evita quebra no aggregate)
     const stats = await Raid.aggregate([
       { $match: { userId: new mongoose.Types.ObjectId(String(req.userId)) } },
       { $group: {
@@ -347,7 +336,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: `Internal server error: ${err.message}` });
 });
 
-// Conecta ao Banco de Dados e então inicializa o servidor Express
+// Conexão e Inicialização
 const PORT = process.env.PORT || 5000;
 mongoose.connect(MONGO_URI)
   .then(() => {
