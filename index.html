@@ -983,7 +983,13 @@
         });
         if (res.ok) {
           processarDashboardPerfil();
-          await carregarEstatisticas(); // Força a atualização do card principal de vermelhos na Tab 1 ao salvar o cofre
+          await carregarEstatisticas();
+          
+          document.getElementById('user-display-name').innerText = payload.username;
+          if (payload.avatarUrl) {
+            document.getElementById('user-display-avatar').src = payload.avatarUrl;
+          }
+
           alert('Vault and Profile successfully updated.');
         }
       } catch (err) { alert('Internal error syncing operator data profile.'); }
@@ -1000,8 +1006,6 @@
         const data = await res.json();
         document.getElementById('stat-raids').innerText = data.totalRaids || 0;
         document.getElementById('stat-patrimonio').innerText = `${(data.patrimonioLiquidoGeral || 0).toLocaleString('en-US')} Koen`;
-        
-        // CORREÇÃO: Consome a soma completa do backend (Fixo do Cofre + Extracões de Raids)
         document.getElementById('stat-vermelhos').innerText = data.totalVermelhos || 0; 
       } catch (err) { console.error('Error fetching dashboard statistics'); }
     }
@@ -1109,7 +1113,6 @@
     }
 
     async function enviarRaid() {
-      // CORREÇÃO: Puxa os valores usando a função de limpeza obterValorNumericoLimpo() para remover as vírgulas da máscara
       const loadoutPuro = obterValorNumericoLimpo('raid-loadout');
       const extractedPuro = obterValorNumericoLimpo('raid-extracted');
       const totalRedsCount = Math.max(0, parseInt(document.getElementById('raid-red-count').value) || 0);
