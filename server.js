@@ -8,11 +8,8 @@ require('dotenv').config();
 
 const app = express();
 
-// Aumenta o limite do body-parser para aceitar uploads em Base64 sem estourar o limite do Express
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true, parameterLimit: 50000 }));
-
-// Permite conexões de qualquer origem
 app.use(cors()); 
 
 const MONGO_URI = process.env.MONGO_URI;
@@ -21,12 +18,7 @@ if (!MONGO_URI) {
   process.exit(1); 
 }
 
-// EVITE fallback hardcoded em produção para chaves secretas
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  console.warn("⚠️ AVISO: JWT_SECRET não definida. Usando chave de fallback para desenvolvimento.");
-}
-const SEGREDO_JWT = JWT_SECRET || 'darkcore_secret_key_siege_123';
+const JWT_SECRET = process.env.JWT_SECRET || 'darkcore_secret_key_siege_123';
 
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST || "smtp.mailtrap.io",
@@ -38,7 +30,7 @@ const transporter = nodemailer.createTransport({
 });
 
 // ==========================================
-// 1. MODELAGEM DE DADOS (SCHEMAS)
+// 1. SCHEMAS
 // ==========================================
 
 const UserSchema = new mongoose.Schema({
@@ -107,10 +99,15 @@ const UserSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-UserSchema.pre('save', async function() {
-  if (!this.isModified('password')) return;
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
+UserSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) return next();
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (err) {
+    next(err);
+  }
 });
 
 const User = mongoose.model('User', UserSchema);
@@ -127,20 +124,21 @@ const RaidSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now }
 });
 
-// CORREÇÃO AQUI: Tratamento síncrono nativo do Mongoose sem o callback 'next' bugando a execução
-RaidSchema.pre('save', function() {
+RaidSchema.pre('save', function(next) {
   if (this.status === 'Survived') {
     this.netProfit = Number(this.extractedValue || 0) - Number(this.loadoutValue || 0);
   } else {
     this.netProfit = -Number(this.loadoutValue || 0);
     this.extractedValue = 0; 
+    this.redItemsCount = 0;
   }
+  next();
 });
 
 const Raid = mongoose.model('Raid', RaidSchema);
 
 // ==========================================
-// 2. MIDDLEWARE DE AUTENTICAÇÃO (JWT)
+// 2. MIDDLEWARE
 // ==========================================
 const autenticarToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -148,7 +146,7 @@ const autenticarToken = (req, res, next) => {
 
   if (!token) return res.status(401).json({ error: 'Access denied. Token missing.' });
 
-  jwt.verify(token, SEGREDO_JWT, (err, decoded) => {
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
     if (err) return res.status(403).json({ error: 'Invalid or expired token.' });
     req.userId = decoded.id;
     next();
@@ -156,7 +154,7 @@ const autenticarToken = (req, res, next) => {
 };
 
 // ==========================================
-// 3. ROTAS DE AUTENTICAÇÃO & PERFIL
+// 3. ROTAS DE AUTENTICAÇÃO E PERFIL
 // ==========================================
 
 app.post('/api/auth/register', async (req, res) => {
@@ -202,7 +200,7 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ error: 'Invalid authentication credentials.' });
     }
     
-    const token = jwt.sign({ id: user._id }, SEGREDO_JWT, { expiresIn: '1d' });
+    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '7d' });
     return res.json({ message: 'Authentication successful!', token });
   } catch (error) {
     return res.status(500).json({ error: `Internal server error during login: ${error.message}` });
@@ -239,7 +237,7 @@ app.put('/api/user/profile', autenticarToken, async (req, res) => {
     }
     if (redItems) {
       for (const [key, value] of Object.entries(redItems)) {
-        updateFields[`redItems.${key}`] = Number(value);
+        updateFields[`redItems.${key}`] = Math.max(0, Number(value) || 0);
       }
     }
     
@@ -256,7 +254,7 @@ app.put('/api/user/profile', autenticarToken, async (req, res) => {
 });
 
 // ==========================================
-// 4. ROTAS DE GERENCIAMENTO DE RAIDS
+// 4. ROTAS DE RAIDS E ESTATÍSTICAS
 // ==========================================
 
 app.post('/api/raids', autenticarToken, async (req, res) => {
@@ -279,7 +277,7 @@ app.post('/api/raids', autenticarToken, async (req, res) => {
 
 app.get('/api/raids', autenticarToken, async (req, res) => {
   try {
-    const listaRaids = await Raid.find({ userId: req.userId }).sort({ date: -1 }).limit(10);
+    const listaRaids = await Raid.find({ userId: req.userId }).sort({ date: -1 }).limit(15);
     return res.json(listaRaids);
   } catch (error) {
     return res.status(500).json({ error: 'Failed to fetch raid activity logs.' });
@@ -310,21 +308,30 @@ app.get('/api/stats', autenticarToken, async (req, res) => {
       }
     }
 
+    const userObjectId = new mongoose.Types.ObjectId(String(req.userId));
+
     const stats = await Raid.aggregate([
-      { $match: { userId: new mongoose.Types.ObjectId(String(req.userId)) } },
+      { $match: { userId: userObjectId } },
       { $group: {
           _id: null,
           totalRaids: { $sum: 1 },
           patrimonioLiquidoGeral: { $sum: "$netProfit" },
-          totalExtraidoValue: { $sum: "$extractedValue" }
+          totalExtraidoValue: { $sum: "$extractedValue" },
+          totalRedsExtraidos: { $sum: "$redItemsCount" }
         }
       }
     ]);
 
-    const resultadoFinal = stats[0] || { totalRaids: 0, patrimonioLiquidoGeral: 0, totalExtraidoValue: 0 };
+    const resultadoFinal = stats[0] || { 
+      totalRaids: 0, 
+      patrimonioLiquidoGeral: 0, 
+      totalExtraidoValue: 0, 
+      totalRedsExtraidos: 0 
+    };
+
     return res.json({
       totalRaids: resultadoFinal.totalRaids,
-      totalVermelhos: totalFixoReds, 
+      totalVermelhos: totalFixoReds + resultadoFinal.totalRedsExtraidos, 
       patrimonioLiquidoGeral: resultadoFinal.patrimonioLiquidoGeral,
       totalExtraidoValue: resultadoFinal.totalExtraidoValue
     });
@@ -339,7 +346,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: `Internal server error: ${err.message}` });
 });
 
-// Conecta ao Banco de Dados e então inicializa o servidor Express
 const PORT = process.env.PORT || 5000;
 mongoose.connect(MONGO_URI)
   .then(() => {
