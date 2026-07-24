@@ -971,8 +971,10 @@
           luxury_chess: Math.max(0, parseInt(document.getElementById('red-luxury_chess').value) || 0),
           spark_steed: Math.max(0, parseInt(document.getElementById('red-spark_steed').value) || 0),
           gold_com_board: Math.max(0, parseInt(document.getElementById('red-gold_com_board').value) || 0),
-          anniv_gold_box: Math.max(0, parseInt(document.getElementById('red-anniv_gold_box').value) || 0)
-        }
+          anniv_gold_box: Math.max(0, parseInt(document.getElementById('red-anniv_gold_box').value) || 0),
+          egg_rally: Math.max(0, parseInt(document.getElementById('red-egg_rally').value) || 0),
+          glory_crown: Math.max(0, parseInt(document.getElementById('red-glory_crown').value) || 0)
+       }
       };
 
       try {
@@ -983,13 +985,7 @@
         });
         if (res.ok) {
           processarDashboardPerfil();
-          await carregarEstatisticas();
-          
-          document.getElementById('user-display-name').innerText = payload.username;
-          if (payload.avatarUrl) {
-            document.getElementById('user-display-avatar').src = payload.avatarUrl;
-          }
-
+          await carregarEstatisticas(); // Força a atualização do card principal de vermelhos na Tab 1 ao salvar o cofre
           alert('Vault and Profile successfully updated.');
         }
       } catch (err) { alert('Internal error syncing operator data profile.'); }
@@ -1006,6 +1002,8 @@
         const data = await res.json();
         document.getElementById('stat-raids').innerText = data.totalRaids || 0;
         document.getElementById('stat-patrimonio').innerText = `${(data.patrimonioLiquidoGeral || 0).toLocaleString('en-US')} Koen`;
+        
+        // CORREÇÃO: Consome a soma completa do backend (Fixo do Cofre + Extracões de Raids)
         document.getElementById('stat-vermelhos').innerText = data.totalVermelhos || 0; 
       } catch (err) { console.error('Error fetching dashboard statistics'); }
     }
@@ -1113,6 +1111,7 @@
     }
 
     async function enviarRaid() {
+      // CORREÇÃO: Puxa os valores usando a função de limpeza obterValorNumericoLimpo() para remover as vírgulas da máscara
       const loadoutPuro = obterValorNumericoLimpo('raid-loadout');
       const extractedPuro = obterValorNumericoLimpo('raid-extracted');
       const totalRedsCount = Math.max(0, parseInt(document.getElementById('raid-red-count').value) || 0);
